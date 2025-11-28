@@ -4,12 +4,18 @@ const app = express();
 const port = 5000;
 const cors = require("cors");
 const dbConfig = require("./config/db");
+const authRoute = require("./routes/auth.route");
 
-dbConfig()
+// ====== db config
+dbConfig();
 
+//============= middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+
+// ========== routes
+app.use("/api/auth", authRoute);
 
 app.get("/", (req, res) => {
   res.send("server is running");
