@@ -1,6 +1,8 @@
+const generateToken = require("../middleware/generateToken");
 const User = require("../models/auth.model");
 const { errorResponse, successResponse } = require("../utils/responseHandler");
 const bcrypt = require("bcrypt");
+const sendVerifyEmail = require("../utils/sendVerifyEmail");
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
 const passwordRegex =
@@ -59,9 +61,126 @@ const logInUser = async (req, res) => {
     if (!comparePassword)
       return errorResponse(res, 401, "Access Denied, Wrong Password");
 
+    const token = await generateToken(user._id);
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
     user.password = undefined;
 
-    return successResponse(res, 200, "User login Successfully", user);
+    return successResponse(
+      res,
+      200,
+      "User login Successfully",
+      (data = {
+        user,
+        token,
+      })
+    );
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, 500, "Internal server error", error);
+  }
+};
+
+const sendVerificationCode = async (req, res) => {
+  try {
+    const id = req.userId;
+    if (!id) return errorResponse(res, 400, "User id not found");
+
+    const existUser = await User.findById(id);
+    if (!existUser) return errorResponse(res, 400, "User not found");
+
+    if (existUser.emailVerified)
+      return errorResponse(res, 400, "Email already verified");
+    if (Date.now() < existUser.emailVerifyCodeExpire) {
+      return errorResponse(res, 400, "Verify code already sent to your email");
+    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = Date.now() + 5 * 60 * 1000;
+
+    existUser.emailVerifyToken = code;
+    existUser.emailVerifyCodeExpire = expiry;
+
+    await sendVerifyEmail(
+      existUser.email,
+      "Email verification code",
+      code,
+      "Verify your account"
+    );
+
+    await existUser.save();
+    return successResponse(
+      res,
+      200,
+      "Email verification code sent successfully"
+    );
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, 500, "Internal server error", error);
+  }
+};
+
+const verifyCode = async (req, res) => {
+  try {
+    const { code } = req.body;
+    const id = req.userId;
+    if (!code) return errorResponse(res, 400, "Please enter verify code");
+    if (!id) return errorResponse(res, 400, "User id not found");
+    const existUser = await User.findById(id);
+    if (!existUser) {
+      return errorResponse(res, 404, "User not found");
+    }
+    if (existUser.emailVerified) {
+      return errorResponse(res, 400, "Email already verified");
+    }
+    if (Date.now() > existUser.emailVerifyCodeExpire) {
+      return errorResponse(res, 400, "Verify code expired");
+    }
+
+    if (code == existUser.emailVerifyToken) {
+      existUser.emailVerified = true;
+      existUser.emailVerifyCodeExpire = null;
+      existUser.emailVerifyToken = null;
+      await existUser.save();
+      return successResponse(res, 200, "Email verified successfully");
+    } else {
+      return errorResponse(res, 400, "Email verify code is wrong");
+    }
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, 500, "Internal server error", error);
+  }
+};
+
+const logOutUser = async (req, res) => {
+  try {
+    res.clearCookie("token");
+    return successResponse(res, 200, "Logout successfully");
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, 500, "Internal server error", error);
+  }
+};
+
+const me = async (req, res) => {
+  try {
+    const id = req.userId;
+    if (!id) {
+      return errorResponse(res, 400, "User id not found");
+    }
+    const user = await User.findById(id);
+    if (!user) {
+      return errorResponse(res, 404, "User not found");
+    }
+
+    user.password = undefined;
+    return successResponse(res, 200, "User found", user);
   } catch (error) {
     console.log(error);
     return errorResponse(res, 500, "Internal server error", error);
@@ -71,4 +190,8 @@ const logInUser = async (req, res) => {
 module.exports = {
   registerUser,
   logInUser,
+  sendVerificationCode,
+  verifyCode,
+  logOutUser,
+  me,
 };
