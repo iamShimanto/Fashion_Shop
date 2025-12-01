@@ -48,6 +48,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    forgetPasswordToken:{
+      type: String,
+      default: null,
+    },
+    forgetPasswordCodeExpire:{
+      type: Date,
+      default: null
+    }
   },
   {
     timestamps: true,

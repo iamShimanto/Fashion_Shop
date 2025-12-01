@@ -50,13 +50,13 @@ export default function ProductDetails({ product }) {
               {/* made image half size on smaller devices */}
               <div
                 key={fadeKey}
-                className="w-full animate-fadeIn sm:h-[50vh] h-[25vh]"
+                className="w-full sm:h-[50vh] h-[25vh]"
               >
                 <Image
                   src={selectedImage}
                   alt="main product"
                   fill
-                  className="object-cover"
+                  className="object-cover animate-fadeIn"
                   sizes="(max-width: 768px) 100vw, 40vw"
                 />
               </div>

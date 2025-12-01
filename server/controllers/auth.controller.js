@@ -187,6 +187,106 @@ const me = async (req, res) => {
   }
 };
 
+const sendForgetPasswordCode = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return errorResponse(res, 400, "Please enter your email");
+    if (!emailRegex.test(email)) {
+      return successResponse(res, 400, "Enter valid email");
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return errorResponse(res, 404, "User not exist");
+    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = Date.now() + 5 * 60 * 1000;
+
+    user.forgetPasswordToken = code;
+    user.forgetPasswordCodeExpire = expiry;
+
+    await sendVerifyEmail(
+      user.email,
+      "Password Reset code",
+      code,
+      "Change your Password"
+    );
+    await user.save();
+    return successResponse(res, 200, "Reset password code sent to your email");
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, 500, "Internal server error", error);
+  }
+};
+
+const forgetPasswordConfirm = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    if (!email) return errorResponse(res, 400, "Email is required");
+    if (!emailRegex.test(email))
+      return errorResponse(res, 400, "Enter valid email");
+    if (!code) return errorResponse(res, 400, "Password reset code required");
+    if (!newPassword) return errorResponse(res, 400, "New Password required");
+    if (!passwordRegex.test(newPassword))
+      return errorResponse(res, 400, "Use strong password");
+
+    const user = await User.findOne({ email });
+    if (!user) return errorResponse(res, 400, "User not found");
+    if (Date.now() > user.forgetPasswordCodeExpire) {
+      return errorResponse(res, 400, "Password reset code is expired");
+    }
+    const checkPassword = await bcrypt.compare(newPassword, user.password);
+    if (checkPassword) {
+      return errorResponse(res, 401, "You entered an old password");
+    }
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = newHashedPassword;
+    user.forgetPasswordCodeExpire = null;
+    user.forgetPasswordToken = null;
+    await user.save();
+
+    return successResponse(res, 200, "Password change successfully");
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, 500, "Internal server error", error);
+  }
+};
+
+const changePassword = async (req, res) => {
+  try {
+    const { email, oldPassword, newPassword } = req.body;
+    if (!email) return errorResponse(res, 400, "Email is required");
+    if (!emailRegex.test(email))
+      return errorResponse(res, 400, "Enter valid email");
+    if (!oldPassword)
+      return errorResponse(res, 400, "Old password is required");
+    if (!newPassword)
+      return errorResponse(res, 400, "New Password is required");
+    if (!passwordRegex.test(newPassword))
+      return errorResponse(res, 400, "use strong new password");
+
+    if(oldPassword === newPassword) return errorResponse(res, 400, "Old password and New password is same")
+
+    const user = await User.findOne({ email });
+    if (!user) return errorResponse(res, 400, "User not found");
+
+    const checkOldPassword = await bcrypt.compare(oldPassword, user.password);
+    if (!checkOldPassword)
+      return errorResponse(res, 401, "Please enter valid old password");
+
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = newHashedPassword;
+    await user.save();
+
+    return successResponse(res, 200, "User password change successfully");
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, 500, "Internal server error", error);
+  }
+};
+
 module.exports = {
   registerUser,
   logInUser,
@@ -194,4 +294,7 @@ module.exports = {
   verifyCode,
   logOutUser,
   me,
+  sendForgetPasswordCode,
+  forgetPasswordConfirm,
+  changePassword,
 };
