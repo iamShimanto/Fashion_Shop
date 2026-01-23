@@ -11,6 +11,13 @@ const orderRoute = require("./routes/order.route");
 const userRoute = require("./routes/user.route");
 require("./config/cloudinary");
 
+if (process.env.NODE_ENV === "production") {
+  // Needed when behind a reverse proxy (Render/NGINX/etc.)
+  app.set("trust proxy", 1);
+}
+
+app.disable("x-powered-by");
+
 // ====== db config
 dbConfig();
 
@@ -43,6 +50,10 @@ app.use("/api/users", userRoute);
 
 app.get("/", (req, res) => {
   res.send("server is running");
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ ok: true });
 });
 
 app.listen(port, () => {

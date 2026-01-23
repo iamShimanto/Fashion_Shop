@@ -11,6 +11,13 @@ import Marquee from "./components/common-components/Marquee";
 import Parallax from "./components/home/parallax";
 import CheckProducts from "./components/sliders/CheckProducts";
 
+export const metadata = {
+  title: "Home",
+  alternates: {
+    canonical: "/",
+  },
+};
+
 const Page = () => {
   return (
     <>
