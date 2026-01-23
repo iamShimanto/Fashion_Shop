@@ -1,8 +1,25 @@
-const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-const API_BASE_URL =
-  typeof rawBaseUrl === "string"
-    ? rawBaseUrl.replace(/^['"]|['"]$/g, "").trim()
-    : rawBaseUrl;
+function normalizeApiBaseUrl(raw) {
+  if (typeof raw !== "string") return "";
+  const cleaned = raw.replace(/^['"]|['"]$/g, "").trim();
+  if (!cleaned) return "";
+
+  const withProtocol = cleaned.startsWith("http")
+    ? cleaned
+    : `https://${cleaned}`;
+
+  try {
+    const url = new URL(withProtocol);
+    url.pathname = url.pathname.replace(/\/+$/g, "");
+    if (url.pathname === "" || url.pathname === "/") {
+      url.pathname = "/api";
+    }
+    return url.toString().replace(/\/+$/g, "");
+  } catch {
+    return cleaned.replace(/\/+$/g, "");
+  }
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
 
 export class ApiError extends Error {
   constructor(message, { status, payload } = {}) {
@@ -28,7 +45,7 @@ export async function apiRequest(path, options = {}) {
     // Fallback helps avoid a hard crash in dev when env is misconfigured.
     // Prefer setting NEXT_PUBLIC_API_BASE_URL in client/.env.development.
     throw new ApiError(
-      "NEXT_PUBLIC_API_BASE_URL is not set. Set it (example: http://localhost:5000/api).",
+      "NEXT_PUBLIC_API_BASE_URL is not set. Set it (example: http://localhost:5000 or http://localhost:5000/api).",
     );
   }
 

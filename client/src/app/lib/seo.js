@@ -3,6 +3,28 @@ function cleanUrl(value) {
   return value.replace(/^['"]|['"]$/g, "").trim();
 }
 
+function normalizeApiBaseUrl(raw) {
+  const cleaned = cleanUrl(raw);
+  if (!cleaned) return "";
+
+  const withProtocol = cleaned.startsWith("http")
+    ? cleaned
+    : `https://${cleaned}`;
+
+  try {
+    const url = new URL(withProtocol);
+    // Remove trailing slashes
+    url.pathname = url.pathname.replace(/\/+$/g, "");
+    if (url.pathname === "" || url.pathname === "/") {
+      url.pathname = "/api";
+    }
+    return url.toString().replace(/\/+$/g, "");
+  } catch {
+    // Fall back to cleaned value as-is (caller can decide what to do)
+    return cleaned.replace(/\/+$/g, "");
+  }
+}
+
 export function getSiteUrl() {
   const raw =
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -32,5 +54,5 @@ export function absoluteUrl(pathOrUrl) {
 
 export function getApiBaseUrl() {
   const raw = process.env.NEXT_PUBLIC_API_BASE_URL || "";
-  return cleanUrl(raw);
+  return normalizeApiBaseUrl(raw);
 }
