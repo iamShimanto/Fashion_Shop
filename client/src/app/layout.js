@@ -5,6 +5,8 @@ import Footer from "./components/common-components/Footer";
 import AosWrapper from "./components/common-components/AosWrapper";
 import BackToTop from "./components/common-components/BackToTop";
 import CustomCursor from "./components/common-components/CustomCursor";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "./providers/AuthProvider";
 
 const bebasNeue = Bebas_Neue({
   weight: "400",
@@ -28,11 +30,14 @@ export default function RootLayout({ children }) {
       <body
         className={`${bebasNeue.variable} ${jakarta.variable} antialiased font-jakarta`}
       >
-        <CustomCursor />
-        <BackToTop />
-        <Nav />
-        <AosWrapper>{children}</AosWrapper>
-        <Footer />
+        <Toaster position="top-center" reverseOrder={false} />
+        <AuthProvider>
+          <CustomCursor />
+          <BackToTop />
+          <Nav />
+          <AosWrapper>{children}</AosWrapper>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

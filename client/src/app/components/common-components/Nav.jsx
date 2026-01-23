@@ -8,7 +8,8 @@ import { PiBagSimpleLight } from "react-icons/pi";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { GrLanguage } from "react-icons/gr";
 import CartPopup from "../nav-components/CartPopup";
-import { BsChevronBarDown, BsChevronDown } from "react-icons/bs";
+import { useAuth } from "@/app/providers/AuthProvider";
+import toast from "react-hot-toast";
 
 const Nav = () => {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -20,6 +21,17 @@ const Nav = () => {
   const inputRef = useRef(null);
   const menuRef = useRef(null);
   const router = useRouter();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Logged out");
+      router.push("/");
+    } catch (e) {
+      toast.error(e?.message || "Logout failed");
+    }
+  };
 
   useEffect(() => {
     if (searchOpen && inputRef.current) inputRef.current.focus();
@@ -53,11 +65,11 @@ const Nav = () => {
       <nav className="mt-3 mx-3 md:mx-5 flex flex-col md:flex-row items-center border-b-2 border-lightBrand rounded-xl nav-custom-shadow bg-white">
         <div className="w-full flex justify-between items-center px-4 lg:px-5 h-15 lg:h-18">
           <Link
-            href="https://weblaa.vercel.app/"
-            target="blank"
+            href="https://shimanto.dev"
+            target="_blank"
             className="text-[34px] font-bebas text-dark text-shadow-light"
           >
-            websola
+            Shimanto
           </Link>
 
           <ul className="hidden md:flex items-center gap-5 relative">
@@ -146,22 +158,48 @@ const Nav = () => {
                 <CiUser />
               </button>
               <ul className="absolute -right-22 top-full  py-3 w-48 bg-white nav-custom-shadow shadow-lg rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200 z-50">
-                <li>
-                  <Link
-                    href="/login"
-                    className="block px-4 py-2 text-2xl cardButtonHover text-center font-bebas text-glow bg-brand border-2 border-brand mx-2 text-white hover:text-dark"
-                  >
-                    LOGIN
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/registration"
-                    className="block px-4 py-2 text-2xl mt-2 cardButtonHover text-center font-bebas text-glow bg-dark border-2 border-dark mx-2 text-white hover:text-dark"
-                  >
-                    Register
-                  </Link>
-                </li>
+                {user ? (
+                  <>
+                    <li className="px-4 pb-2 text-center text-sm text-gray-600">
+                      {user.fullName || user.email}
+                    </li>
+                    <li>
+                      <Link
+                        href="/account"
+                        className="block px-4 py-2 text-2xl cardButtonHover text-center font-bebas text-glow bg-brand border-2 border-brand mx-2 text-white hover:text-dark"
+                      >
+                        Account
+                      </Link>
+                    </li>
+                    <li>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-[calc(100%-16px)] mx-2 px-4 py-2 text-2xl mt-2 cardButtonHover text-center font-bebas text-glow bg-dark border-2 border-dark text-white hover:text-dark"
+                      >
+                        Logout
+                      </button>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li>
+                      <Link
+                        href="/login"
+                        className="block px-4 py-2 text-2xl cardButtonHover text-center font-bebas text-glow bg-brand border-2 border-brand mx-2 text-white hover:text-dark"
+                      >
+                        LOGIN
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/registration"
+                        className="block px-4 py-2 text-2xl mt-2 cardButtonHover text-center font-bebas text-glow bg-dark border-2 border-dark mx-2 text-white hover:text-dark"
+                      >
+                        Register
+                      </Link>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
 
@@ -294,24 +332,54 @@ const Nav = () => {
               </button>
               {mobileUserDropdownOpen && (
                 <ul className=" flex shadow-lg flex-col gap-2 pt-3 pb-4 px-3 mt-2">
-                  <li>
-                    <Link
-                      href="/login"
-                      className="inline-block text-3xl bg-brand px-2 font-bebas py-2 text-text text-glow border-2 w-full hover:text-brand"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      LOGIN
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/registration"
-                      className="inline-block text-3xl bg-dark px-2 font-bebas py-2 text-text text-glow border-2 w-full hover:text-brand"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Register
-                    </Link>
-                  </li>
+                  {user ? (
+                    <>
+                      <li className="text-sm text-gray-600 px-1">
+                        {user.fullName || user.email}
+                      </li>
+                      <li>
+                        <Link
+                          href="/account"
+                          className="inline-block text-3xl bg-brand px-2 font-bebas py-2 text-text text-glow border-2 w-full hover:text-brand"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          Account
+                        </Link>
+                      </li>
+                      <li>
+                        <button
+                          onClick={async () => {
+                            await handleLogout();
+                            setMenuOpen(false);
+                          }}
+                          className="inline-block text-3xl bg-dark px-2 font-bebas py-2 text-text text-glow border-2 w-full hover:text-brand"
+                        >
+                          Logout
+                        </button>
+                      </li>
+                    </>
+                  ) : (
+                    <>
+                      <li>
+                        <Link
+                          href="/login"
+                          className="inline-block text-3xl bg-brand px-2 font-bebas py-2 text-text text-glow border-2 w-full hover:text-brand"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          LOGIN
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/registration"
+                          className="inline-block text-3xl bg-dark px-2 font-bebas py-2 text-text text-glow border-2 w-full hover:text-brand"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          Register
+                        </Link>
+                      </li>
+                    </>
+                  )}
                 </ul>
               )}
             </li>

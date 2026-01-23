@@ -9,8 +9,11 @@ const {
   sendForgetPasswordCode,
   forgetPasswordConfirm,
   changePassword,
+  updateProfile,
 } = require("../controllers/auth.controller");
 const verifyToken = require("../middleware/verifyToken");
+const multer = require("multer");
+const upload = multer();
 const router = express.Router();
 
 router.post("/register", registerUser);
@@ -22,5 +25,6 @@ router.get("/me", verifyToken, me)
 router.post("/send-forget-password-code", sendForgetPasswordCode)
 router.post("/forget-password-confirm", forgetPasswordConfirm)
 router.post("/change-password", changePassword)
+router.put("/update-profile", verifyToken, upload.single("avater"), updateProfile)
 
 module.exports = router;

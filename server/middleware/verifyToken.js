@@ -4,19 +4,22 @@ const jwt_secret = process.env.JWT_SECRET;
 
 const verifyToken = async (req, res, next) => {
   try {
-    const token = req.cookies?.token || req.headers.authorization.split(" ")[1];
+    const authHeader = req.headers.authorization;
+    const bearerToken =
+      authHeader && authHeader.startsWith("Bearer ")
+        ? authHeader.split(" ")[1]
+        : null;
+    const token = req.cookies?.token || bearerToken;
 
-    if (!token) {
-      return errorResponse(res, 403, "Unauthorized access, token not found");
-    }
+    if (!token) return errorResponse(res, 401, "Unauthorized access");
 
-    const decoded = await jwt.verify(token, jwt_secret);
+    const decoded = jwt.verify(token, jwt_secret);
 
     req.userId = decoded.userId;
     req.role = decoded.role;
     next();
   } catch (error) {
-    return errorResponse(res, 500, "Verify token failed", error);
+    return errorResponse(res, 401, "Unauthorized access");
   }
 };
 

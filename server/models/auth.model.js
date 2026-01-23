@@ -36,6 +36,10 @@ const userSchema = new mongoose.Schema(
       default: "",
       index: true,
     },
+    address: {
+      type: String,
+      default: "",
+    },
     emailVerified: {
       type: Boolean,
       default: false,
@@ -48,18 +52,18 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    forgetPasswordToken:{
+    forgetPasswordToken: {
       type: String,
       default: null,
     },
-    forgetPasswordCodeExpire:{
+    forgetPasswordCodeExpire: {
       type: Date,
-      default: null
-    }
+      default: null,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const User = mongoose.model("User", userSchema);

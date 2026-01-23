@@ -38,7 +38,7 @@ export default function Footer() {
             className="flex-1 min-w-[250px]"
           >
             <h2 className=" mb-4 text-3xl md:text-4xl text-shadow-2xl text-brand font-bebas ">
-              websola
+              Shimanto
             </h2>
             <p className="font-jakarta text-gray-600 mb-1">
               549 Oak St. Crystal Lake, IL 60014
@@ -54,10 +54,10 @@ export default function Footer() {
 
             <div className="mt-4 space-y-2 text-gray-700">
               <p className="flex items-center gap-2">
-                <CiMail className="w-4 h-4" /> themesflat@gmail.com
+                <CiMail className="w-4 h-4" /> shimanto.dev.bd@gmail.com
               </p>
               <p className="flex items-center gap-2">
-                <CiPhone className="w-4 h-4" /> 315-666-6688
+                <CiPhone className="w-4 h-4" /> 01750658101
               </p>
             </div>
 

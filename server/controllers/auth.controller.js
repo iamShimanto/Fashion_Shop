@@ -3,6 +3,7 @@ const User = require("../models/auth.model");
 const { errorResponse, successResponse } = require("../utils/responseHandler");
 const bcrypt = require("bcrypt");
 const sendVerifyEmail = require("../utils/sendVerifyEmail");
+const { uploadToCloudinary, deleteFromCloudinary } = require("../utils/cloudinaryHelper");
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
 const passwordRegex =
@@ -80,7 +81,7 @@ const logInUser = async (req, res) => {
       (data = {
         user,
         token,
-      })
+      }),
     );
   } catch (error) {
     console.log(error);
@@ -111,14 +112,14 @@ const sendVerificationCode = async (req, res) => {
       existUser.email,
       "Email verification code",
       code,
-      "Verify your account"
+      "Verify your account",
     );
 
     await existUser.save();
     return successResponse(
       res,
       200,
-      "Email verification code sent successfully"
+      "Email verification code sent successfully",
     );
   } catch (error) {
     console.log(error);
@@ -209,7 +210,7 @@ const sendForgetPasswordCode = async (req, res) => {
       user.email,
       "Password Reset code",
       code,
-      "Change your Password"
+      "Change your Password",
     );
     await user.save();
     return successResponse(res, 200, "Reset password code sent to your email");
@@ -266,7 +267,8 @@ const changePassword = async (req, res) => {
     if (!passwordRegex.test(newPassword))
       return errorResponse(res, 400, "use strong new password");
 
-    if(oldPassword === newPassword) return errorResponse(res, 400, "Old password and New password is same")
+    if (oldPassword === newPassword)
+      return errorResponse(res, 400, "Old password and New password is same");
 
     const user = await User.findOne({ email });
     if (!user) return errorResponse(res, 400, "User not found");
@@ -287,6 +289,34 @@ const changePassword = async (req, res) => {
   }
 };
 
+const updateProfile = async (req, res) => {
+  try {
+    const { fullName, phone, address } = req.body;
+    const id = req.userId;
+    if (!id) return errorResponse(res, 400, "User id not found");
+    const user = await User.findById(id);
+    if (!user) return errorResponse(res, 404, "User not found");
+
+    if (req.file) {
+      if (user.avater) {
+        const imagePublicId = user.avater.split("/").pop().split(".")[0];
+        await deleteFromCloudinary(`avater/${imagePublicId}`);
+      }
+      const imageRes = await uploadToCloudinary(req.file, "avater");
+      user.avater = imageRes.secure_url;
+    }
+
+    if (fullName) user.fullName = fullName;
+    if (phone) user.phone = phone;
+    if (address) user.address = address;
+    await user.save();
+    user.password = undefined;
+    return successResponse(res, 200, "Profile updated successfully", user);
+  } catch (error) {
+    return errorResponse(res, 500, "Internal server error", error);
+  }
+};
+
 module.exports = {
   registerUser,
   logInUser,
@@ -297,4 +327,5 @@ module.exports = {
   sendForgetPasswordCode,
   forgetPasswordConfirm,
   changePassword,
+  updateProfile,
 };
