@@ -12,6 +12,7 @@ async function fetchProduct(slug) {
   });
 
   const payload = await res.json().catch(() => null);
+  console.log(payload)
   if (res.status === 404) return { notFound: true };
 
   if (!res.ok || payload?.success === false) {
@@ -45,6 +46,7 @@ function buildDescription(product) {
 export async function generateMetadata({ params }) {
   try {
     const result = await fetchProduct(params.slug);
+    console.log(result)
     if (result.notFound) {
       return {
         title: "Product not found",
@@ -109,6 +111,7 @@ async function fetchRelatedProducts(product) {
   });
 
   const payload = await res.json().catch(() => null);
+  console.log(payload)
   if (!res.ok || payload?.success === false) return [];
 
   const items = payload?.data?.items;
@@ -121,11 +124,12 @@ async function fetchRelatedProducts(product) {
 
 export default async function Page({ params }) {
   const result = await fetchProduct(params.slug);
+  console.log(result)
   if (result.notFound) notFound();
 
   const related = await fetchRelatedProducts(result.data);
   const product = result.data;
-
+  console.log(product)
   const site = getSiteUrl();
   const productUrl = new URL(`/shop/${params.slug}`, site).toString();
   const imageUrl = pickImageUrl(product);
