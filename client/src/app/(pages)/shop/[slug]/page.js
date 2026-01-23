@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { getApiBaseUrl } from "@/app/lib/seo";
 import { absoluteUrl, getSiteUrl } from "@/app/lib/seo";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function fetchProduct(slug) {
   const base = getApiBaseUrl() || "https://fashion-server.shimanto.dev/api";
 
@@ -12,8 +15,21 @@ async function fetchProduct(slug) {
   });
 
   const payload = await res.json().catch(() => null);
-  console.log(payload)
-  if (res.status === 404) return { notFound: true };
+
+  // Only treat as a real "not found" when the API returns a JSON payload.
+  // Misconfigured API base can return an HTML 404 which would otherwise mask issues.
+  if (res.status === 404) {
+    const apiSaysNotFound =
+      payload &&
+      (payload?.success === false ||
+        /not found/i.test(String(payload?.message || "")));
+
+    if (apiSaysNotFound) return { notFound: true };
+
+    throw new Error(
+      `Product fetch returned 404 from ${base}. Check NEXT_PUBLIC_API_BASE_URL and production deploy env.`,
+    );
+  }
 
   if (!res.ok || payload?.success === false) {
     const message =
@@ -46,7 +62,6 @@ function buildDescription(product) {
 export async function generateMetadata({ params }) {
   try {
     const result = await fetchProduct(params.slug);
-    console.log(result)
     if (result.notFound) {
       return {
         title: "Product not found",
@@ -59,15 +74,18 @@ export async function generateMetadata({ params }) {
     const description = buildDescription(product);
     const image = pickImageUrl(product);
 
+    const site = getSiteUrl();
+    const canonical = new URL(`/shop/${params.slug}`, site).toString();
+
     return {
       title,
       description,
       alternates: {
-        canonical: `/shop/${params.slug}`,
+        canonical,
       },
       openGraph: {
         type: "website",
-        url: `/shop/${params.slug}`,
+        url: canonical,
         title,
         description,
         images: [{ url: image }],
@@ -111,7 +129,6 @@ async function fetchRelatedProducts(product) {
   });
 
   const payload = await res.json().catch(() => null);
-  console.log(payload)
   if (!res.ok || payload?.success === false) return [];
 
   const items = payload?.data?.items;
@@ -124,12 +141,10 @@ async function fetchRelatedProducts(product) {
 
 export default async function Page({ params }) {
   const result = await fetchProduct(params.slug);
-  console.log(result)
   if (result.notFound) notFound();
 
   const related = await fetchRelatedProducts(result.data);
   const product = result.data;
-  console.log(product)
   const site = getSiteUrl();
   const productUrl = new URL(`/shop/${params.slug}`, site).toString();
   const imageUrl = pickImageUrl(product);
