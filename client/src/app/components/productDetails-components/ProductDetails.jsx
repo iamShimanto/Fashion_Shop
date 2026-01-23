@@ -5,9 +5,32 @@ import Image from "next/image";
 import Link from "next/link";
 
 export default function ProductDetails({ product }) {
-  const [selectedImage, setSelectedImage] = useState(product.images[0]);
+  const safeImages =
+    Array.isArray(product?.images) && product.images.length > 0
+      ? product.images
+      : ["/product-2.jpeg"];
+  const safeColors = Array.isArray(product?.colors) ? product.colors : [];
+  const safeSizes = Array.isArray(product?.sizes) ? product.sizes : [];
+
+  const numericPrice = Number(product?.price || 0);
+  const numericOldPrice =
+    product?.oldPrice !== undefined && product?.oldPrice !== null
+      ? Number(product.oldPrice)
+      : null;
+  const hasDiscount =
+    numericOldPrice !== null &&
+    !Number.isNaN(numericOldPrice) &&
+    numericOldPrice > numericPrice;
+  const discountPercent = hasDiscount
+    ? Math.round(((numericOldPrice - numericPrice) / numericOldPrice) * 100)
+    : 0;
+
+  const stockQty = Number(product?.inventory?.quantity ?? 0);
+  const inStock = product?.inStock ?? stockQty > 0;
+
+  const [selectedImage, setSelectedImage] = useState(safeImages[0]);
   const [fadeKey, setFadeKey] = useState(0); // helps trigger animation
-  const [selectedSize, setSelectedSize] = useState("L");
+  const [selectedSize, setSelectedSize] = useState(safeSizes[0] || "");
   const [quantity, setQuantity] = useState(1);
 
   const handleImageChange = (img) => {
@@ -21,7 +44,7 @@ export default function ProductDetails({ product }) {
         <div className="sticky top-10">
           <div className="flex flex-col lg:flex-row gap-4 md:flex-1 md:max-w-[650px]">
             <div className="hidden lg:flex flex-col gap-3 md:gap-4 justify-start">
-              {product.images.map((img, i) => (
+              {safeImages.map((img, i) => (
                 <button
                   key={i}
                   onClick={() => handleImageChange(img)}
@@ -48,10 +71,7 @@ export default function ProductDetails({ product }) {
               }}
             >
               {/* made image half size on smaller devices */}
-              <div
-                key={fadeKey}
-                className="w-full sm:h-[50vh] h-[25vh]"
-              >
+              <div key={fadeKey} className="w-full sm:h-[50vh] h-[25vh]">
                 <Image
                   src={selectedImage}
                   alt="main product"
@@ -62,7 +82,7 @@ export default function ProductDetails({ product }) {
               </div>
             </div>
             <div className="lg:hidden flex gap-3 md:gap-4 justify-start">
-              {product.images.map((img, i) => (
+              {safeImages.map((img, i) => (
                 <button
                   key={i}
                   onClick={() => handleImageChange(img)}
@@ -90,54 +110,64 @@ export default function ProductDetails({ product }) {
 
         <div className="flex items-center gap-3">
           <span className="text-4xl sm:text-6xl font-bebas font-semibold tracking-wide text-shadow-lighter text-dark/90">
-            ${product.price.toFixed(2)}
+            ${numericPrice.toFixed(2)}
           </span>
-          <span className="line-through text-gray-500 font-jakarta">
-            ${product.oldPrice.toFixed(2)}
-          </span>
-          <span className="bg-red-500 text-white font-jakarta px-2 py-0.5 text-sm rounded">
-            -25%
-          </span>
+          {hasDiscount && (
+            <>
+              <span className="line-through text-gray-500 font-jakarta">
+                ${numericOldPrice.toFixed(2)}
+              </span>
+              <span className="bg-red-500 text-white font-jakarta px-2 py-0.5 text-sm rounded">
+                -{discountPercent}%
+              </span>
+            </>
+          )}
         </div>
 
         <div>
           <p className="text-md sm:text-lg text-dark/50 font-jakarta pr-3">
-            The garments labelled as Committed are products that have been
-            produced using sustainable fibres or processes, reducing their
-            environmental impact.
+            {product?.description?.trim()
+              ? product.description
+              : "Premium fabric, modern fit, and designed for everyday comfort."}
           </p>
         </div>
 
-        <div>
-          <p className="font-medium mb-2">Colors:</p>
-          <div className="flex gap-2">
-            {product.colors.map((c, i) => (
-              <span
-                key={i}
-                style={{ backgroundColor: c.code }}
-                className="w-8 h-8 rounded-full border-2 border-white ring-2 ring-dark/80 cursor-pointer shadow-md hover:scale-85 duration-150"
-                title={c.name}
-              />
-            ))}
+        {safeColors.length > 0 && (
+          <div>
+            <p className="font-medium mb-2">Colors:</p>
+            <div className="flex gap-2 flex-wrap">
+              {safeColors.map((c, i) => (
+                <span
+                  key={i}
+                  style={{ backgroundColor: c.code || "#000" }}
+                  className="w-8 h-8 rounded-full border-2 border-white ring-2 ring-dark/80 cursor-pointer shadow-md hover:scale-85 duration-150"
+                  title={c.name || "Color"}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div>
-          <p className="font-medium mb-2">Size:</p>
-          <div className="flex gap-2">
-            {product.sizes.map((s) => (
-              <button
-                key={s}
-                onClick={() => setSelectedSize(s)}
-                className={`w-10 h-10 rounded-full border-2 text-sm cursor-pointer duration-250 hover:shadow-2xl hover:border-dark ${
-                  selectedSize === s ? "bg-black text-white" : "border-gray-400"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
+        {safeSizes.length > 0 && (
+          <div>
+            <p className="font-medium mb-2">Size:</p>
+            <div className="flex gap-2 flex-wrap">
+              {safeSizes.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSelectedSize(s)}
+                  className={`w-10 h-10 rounded-full border-2 text-sm cursor-pointer duration-250 hover:shadow-2xl hover:border-dark ${
+                    selectedSize === s
+                      ? "bg-black text-white"
+                      : "border-gray-400"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex items-center gap-4 py-3">
           <p className="font-medium">Quantity:</p>
@@ -159,8 +189,13 @@ export default function ProductDetails({ product }) {
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 border-b border-dark/20 pb-4">
-          <button className="flex-1 py-1.5 bg-dark text-2xl lg:text-4xl font-bebas cardButtonHover border-3 border-dark text-white rounded shadow hover:text-dark/90 cursor-pointer">
-            Add to Cart – ${product.price.toFixed(2)}
+          <button
+            disabled={!inStock}
+            className="flex-1 py-1.5 bg-dark text-2xl lg:text-4xl font-bebas cardButtonHover border-3 border-dark text-white rounded shadow hover:text-dark/90 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {inStock
+              ? `Add to Cart – $${numericPrice.toFixed(2)}`
+              : "Out of Stock"}
           </button>
           <Link
             href={"/payment"}
@@ -183,16 +218,19 @@ export default function ProductDetails({ product }) {
 
         <div className="border-b border-dark/20 pb-4">
           <p className="text-sm md:text-md text-dark/70 font-jakarta pt-1">
-            SKU: 53453412
+            SKU: {product?.sku || "N/A"}
           </p>
           <p className="text-sm md:text-md text-dark/70 font-jakarta pt-1">
-            Vendor: Modave
+            Vendor: {product?.vendor || "N/A"}
           </p>
           <p className="text-sm md:text-md text-dark/70 font-jakarta pt-1">
-            Available: Instock
+            Available: {inStock ? "In stock" : "Out of stock"}
           </p>
           <p className="text-sm md:text-md text-dark/70 font-jakarta pt-1">
-            Categories: Clothes, women, T-shirt
+            Categories:{" "}
+            {Array.isArray(product?.categories) && product.categories.length > 0
+              ? product.categories.join(", ")
+              : "N/A"}
           </p>
         </div>
       </div>

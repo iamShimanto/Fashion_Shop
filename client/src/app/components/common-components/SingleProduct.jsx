@@ -4,10 +4,13 @@ import React from "react";
 import { LuHeart } from "react-icons/lu";
 import { BsCartCheck } from "react-icons/bs";
 
-const SingleProduct = ({ image, title, price }) => {
+const SingleProduct = ({ image, title, price, slug, href }) => {
+  const finalHref =
+    href || (slug ? `/productDetails/${slug}` : "/productDetails");
+
   return (
     <div className="rounded-2xl overflow-hidden group w-full">
-      <Link href={"/productDetails"} className="">
+      <Link href={finalHref} className="">
         <div
           className="
             relative 
@@ -50,7 +53,7 @@ const SingleProduct = ({ image, title, price }) => {
       </Link>
 
       <div className="p-3 text-center">
-        <Link href={"/productDetails"}>
+        <Link href={finalHref}>
           <h3 className="font-normal font-jakarta     mb-2 text-[15px]  text-brand text-shadow-2xs">
             {title}
           </h3>
