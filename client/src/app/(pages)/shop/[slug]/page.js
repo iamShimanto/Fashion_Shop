@@ -4,10 +4,7 @@ import { notFound } from "next/navigation";
 import { absoluteUrl, getSiteUrl } from "@/app/lib/seo";
 
 async function fetchProduct(slug) {
-  const base = (
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api"
-  )
-    .toString()
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL.toString()
     .replace(/^['"]|['"]$/g, "")
     .trim();
 
@@ -68,7 +65,9 @@ export async function generateMetadata({ params }) {
         canonical: `/shop/${params.slug}`,
       },
       openGraph: {
-        type: "product",
+        // Next.js Metadata only supports a limited set of OG types.
+        // Use "website" for product pages and rely on JSON-LD for Product schema.
+        type: "website",
         url: `/shop/${params.slug}`,
         title,
         description,
@@ -93,10 +92,7 @@ export async function generateMetadata({ params }) {
 }
 
 async function fetchRelatedProducts(product) {
-  const base = (
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api"
-  )
-    .toString()
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL.toString()
     .replace(/^['"]|['"]$/g, "")
     .trim();
 
