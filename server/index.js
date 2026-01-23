@@ -7,6 +7,8 @@ const dbConfig = require("./config/db");
 const cookieParser = require("cookie-parser");
 const authRoute = require("./routes/auth.route");
 const productRoute = require("./routes/product.route");
+const orderRoute = require("./routes/order.route");
+const userRoute = require("./routes/user.route");
 require("./config/cloudinary");
 
 // ====== db config
@@ -17,13 +19,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   process.env.CLIENT_URL || "http://localhost:3000",
+  "http://localhost:3001",
   process.env.ADMIN_URL || "http://localhost:5173",
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow non-browser tools (curl/postman) with no origin
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error("Not allowed by CORS"));
@@ -36,6 +38,8 @@ app.use(cookieParser());
 // ========== routes
 app.use("/api/auth", authRoute);
 app.use("/api/products", productRoute);
+app.use("/api/orders", orderRoute);
+app.use("/api/users", userRoute);
 
 app.get("/", (req, res) => {
   res.send("server is running");

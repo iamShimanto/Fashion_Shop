@@ -53,6 +53,13 @@ const productSchema = new mongoose.Schema(
     },
     vendor: { type: String, default: "", trim: true, index: true },
 
+    gender: {
+      type: String,
+      enum: ["men", "women", "unisex"],
+      default: "unisex",
+      index: true,
+    },
+
     categories: [{ type: String, trim: true, index: true }],
     tags: [{ type: String, trim: true, index: true }],
 

@@ -78,15 +78,7 @@ const Nav = () => {
                 href="/"
                 className="flex gap-1 justify-center items-center text-lg  text-dark font-jakarta duration-150 hover:text-brand"
               >
-                home
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/"
-                className="flex gap-1 justify-center items-center text-lg  text-dark font-jakarta duration-150 hover:text-brand"
-              >
-                products
+                Home
               </Link>
             </li>
             <li>
@@ -94,63 +86,30 @@ const Nav = () => {
                 href="/shop"
                 className="flex gap-1 justify-center items-center text-lg  text-dark font-jakarta duration-150 hover:text-brand"
               >
-                shop
+                Shop
               </Link>
             </li>
-
-            <li className="relative group hidden lg:flex h-full">
-              <span className="cursor-pointer py-5 text-lg text-dark font-jakarta duration-150 hover:text-brand">
-                demo
-              </span>
-              <ul className="absolute top-10 left-0 hidden group-hover:flex flex-col font-jakarta nav-custom-shadow bg-white rounded py-3 gap-2 mt-2 min-w-[150px]">
-                <li>
-                  <Link
-                    href="/theme1"
-                    className="px-4 py-2 text-dark duration-150 hover:text-brand"
-                  >
-                    resturant
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/theme2"
-                    className="px-4 py-2 text-dark duration-150 hover:text-brand"
-                  >
-                    e-commerce
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/theme3"
-                    className="px-4 py-2 text-dark duration-150 hover:text-brand"
-                  >
-                    blog
-                  </Link>
-                </li>
-              </ul>
+            <li>
+              <Link
+                href="/about"
+                className="flex gap-1 justify-center items-center text-lg  text-dark font-jakarta duration-150 hover:text-brand"
+              >
+                About Us
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/account"
+                className="flex gap-1 justify-center items-center text-lg  text-dark font-jakarta duration-150 hover:text-brand"
+              >
+                My Account
+              </Link>
             </li>
           </ul>
 
           {/* Desktop right icons */}
           <div className="hidden md:flex items-center gap-3 relative">
-            {/* Search */}
-            <div className="flex items-center">
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="Search..."
-                onKeyDown={handleSearchKeyDown}
-                className={`h-9 py-2 pl-3 pr-3 rounded-full border-2 border-lightBrand bg-white text-dark focus:outline-none transition-all duration-300 ease-in-out ${
-                  searchOpen ? "w-48 md:w-64 opacity-100" : "w-0 opacity-0"
-                }`}
-              />
-              <button
-                onClick={() => setSearchOpen(!searchOpen)}
-                className="text-xl lg:text-2xl text-dark hover:text-brand ml-2"
-              >
-                <CiSearch />
-              </button>
-            </div>
+           
 
             {/* User dropdown (hover) */}
             <div className="relative group">
@@ -254,68 +213,29 @@ const Nav = () => {
                 className="text-xl font-bebas hover:text-brand"
                 onClick={() => setMenuOpen(false)}
               >
-                men
+                Home
               </Link>
             </li>
             <li>
               <Link
-                href="/"
+                href="/shop"
                 className="text-xl font-bebas hover:text-brand"
                 onClick={() => setMenuOpen(false)}
               >
-                women
+                Shop
               </Link>
             </li>
             <li>
               <Link
-                href="/"
+                href="/account"
                 className="text-xl font-bebas hover:text-brand"
                 onClick={() => setMenuOpen(false)}
               >
-                shop
+                Account
               </Link>
             </li>
 
             {/* Mobile demo */}
-            <li>
-              <button
-                className="w-full text-left text-xl font-bebas text-dark hover:text-brand flex justify-between items-center"
-                onClick={() => setMobileDropdownOpen((prev) => !prev)}
-              >
-                demo <span>{mobileDropdownOpen ? "▲" : "▼"}</span>
-              </button>
-              {mobileDropdownOpen && (
-                <ul className="flex shadow-lg flex-col gap-2 pt-3 pb-4 px-3 mt-2">
-                  <li>
-                    <Link
-                      href="/theme1"
-                      className="text-dark/70 hover:text-brand"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Theme 1
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/theme2"
-                      className="text-dark/70 hover:text-brand"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Theme 2
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/theme3"
-                      className="text-dark/70 hover:text-brand"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      Theme 3
-                    </Link>
-                  </li>
-                </ul>
-              )}
-            </li>
 
             <hr className="border-gray-300 my-2" />
 
@@ -388,25 +308,11 @@ const Nav = () => {
 
             {/* Mobile footer icons */}
             <li className="flex items-center gap-4">
-              <Link
-                href="/"
-                className="text-2xl text-dark hover:text-brand"
-                onClick={() => setMenuOpen(false)}
-              >
-                <GrLanguage />
-              </Link>
-
-              <Link
-                href="/wishlist"
-                className="text-2xl text-dark hover:text-brand"
-              >
-                <CiHeart />
-              </Link>
-
               <button
                 onClick={() => setCartOpen(true)}
-                className="text-2xl text-dark hover:text-brand"
+                className="text-2xl text-brand hover:text-brand flex items-center gap-1 font-bold"
               >
+                Cart
                 <PiBagSimpleLight />
               </button>
             </li>

@@ -4,11 +4,15 @@ import AdminLayout from "./components/layout/AdminLayout";
 import ProtectedAdmin from "./routes/ProtectedAdmin";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 import ProductsList from "./pages/Products/ProductsList";
 import ProductForm from "./pages/Products/ProductForm";
+import OrdersList from "./pages/Orders/OrdersList";
+import OrderDetails from "./pages/Orders/OrderDetails";
+import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
+import UsersList from "./pages/Users/UsersList";
+import UserDetails from "./pages/Users/UserDetails";
 
 export default function App() {
   return (
@@ -27,24 +31,13 @@ export default function App() {
             />
             <Route path="/products/:id" element={<ProductForm mode="edit" />} />
 
-            <Route
-              path="/orders"
-              element={
-                <ComingSoon
-                  title="Orders"
-                  description="Order management is planned for your next routes."
-                />
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <ComingSoon
-                  title="Analytics"
-                  description="Dashboard analytics is scaffolded for later."
-                />
-              }
-            />
+            <Route path="/orders" element={<OrdersList />} />
+            <Route path="/orders/:id" element={<OrderDetails />} />
+
+            <Route path="/users" element={<UsersList />} />
+            <Route path="/users/:id" element={<UserDetails />} />
+
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>

@@ -32,6 +32,7 @@ export default function ProductForm({ mode }) {
   const [description, setDescription] = useState("");
   const [vendor, setVendor] = useState("");
   const [sku, setSku] = useState("");
+  const [gender, setGender] = useState("unisex");
   const [status, setStatus] = useState("draft");
   const [price, setPrice] = useState("");
   const [compareAtPrice, setCompareAtPrice] = useState("");
@@ -65,6 +66,7 @@ export default function ProductForm({ mode }) {
         setDescription(p.description || "");
         setVendor(p.vendor || "");
         setSku(p.sku || "");
+        setGender(p.gender || "unisex");
         setStatus(p.status || "draft");
         setPrice(p.price ?? "");
         setCompareAtPrice(p.compareAtPrice ?? "");
@@ -95,6 +97,7 @@ export default function ProductForm({ mode }) {
       description,
       vendor,
       sku: sku || undefined,
+      gender,
       status,
       price: numberOrEmpty(price),
       compareAtPrice: numberOrEmpty(compareAtPrice),
@@ -179,6 +182,21 @@ export default function ProductForm({ mode }) {
               value={sku}
               onChange={(e) => setSku(e.target.value)}
             />
+
+            <label className="block">
+              <div className="mb-1 text-sm font-semibold text-dark/90">
+                Gender
+              </div>
+              <select
+                className="w-full rounded-lg border border-dark/15 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+              >
+                <option value="unisex">Unisex</option>
+                <option value="men">Men</option>
+                <option value="women">Women</option>
+              </select>
+            </label>
 
             <label className="block">
               <div className="mb-1 text-sm font-semibold text-dark/90">

@@ -7,6 +7,7 @@ import BackToTop from "./components/common-components/BackToTop";
 import CustomCursor from "./components/common-components/CustomCursor";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./providers/AuthProvider";
+import { CartProvider } from "./providers/CartProvider";
 
 const bebasNeue = Bebas_Neue({
   weight: "400",
@@ -32,11 +33,13 @@ export default function RootLayout({ children }) {
       >
         <Toaster position="top-center" reverseOrder={false} />
         <AuthProvider>
-          <CustomCursor />
-          <BackToTop />
-          <Nav />
-          <AosWrapper>{children}</AosWrapper>
-          <Footer />
+          <CartProvider>
+            <CustomCursor />
+            <BackToTop />
+            <Nav />
+            <AosWrapper>{children}</AosWrapper>
+            <Footer />
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

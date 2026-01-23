@@ -1,8 +1,8 @@
 "use client";
 
-import Breadcrumb from "@/app/components/common-components/Breadcrumb";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { authApi } from "@/app/lib/authApi";
+import { orderApi } from "@/app/lib/orderApi";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
@@ -20,6 +20,9 @@ export default function Page() {
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
 
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [orders, setOrders] = useState([]);
+
   const profileForm = useForm();
   const passwordForm = useForm();
 
@@ -35,6 +38,82 @@ export default function Page() {
       passwordForm.reset({ oldPassword: "", newPassword: "" });
     }
   }, [user, profileForm, passwordForm]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadOrders = async () => {
+      if (!user) {
+        setOrders([]);
+        return;
+      }
+
+      setOrdersLoading(true);
+      try {
+        const res = await orderApi.my({ limit: 10 });
+        const items = res?.data?.items || [];
+        if (!cancelled) setOrders(items);
+      } catch (e) {
+        if (!cancelled) {
+          setOrders([]);
+          toast.error(e?.message || "Failed to load orders");
+        }
+      } finally {
+        if (!cancelled) setOrdersLoading(false);
+      }
+    };
+
+    if (!loading) loadOrders();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, loading]);
+
+  const badgeClass = (variant) => {
+    switch (variant) {
+      case "green":
+        return "bg-green-50 text-green-700 border-green-200";
+      case "yellow":
+        return "bg-orange-50 text-orange-700 border-orange-200";
+      case "red":
+        return "bg-red-50 text-red-700 border-red-200";
+      case "blue":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
+  const statusVariant = (status) => {
+    switch (status) {
+      case "delivered":
+        return "green";
+      case "cancelled":
+        return "red";
+      case "shipped":
+      case "confirmed":
+        return "blue";
+      case "pending":
+        return "yellow";
+      default:
+        return "gray";
+    }
+  };
+
+  const paymentVariant = (status) => {
+    switch (status) {
+      case "paid":
+        return "green";
+      case "failed":
+        return "red";
+      case "refunded":
+        return "gray";
+      case "pending":
+        return "yellow";
+      default:
+        return "gray";
+    }
+  };
 
   const disableActions =
     loading || refreshing || loggingOut || updatingProfile || changingPassword;
@@ -91,8 +170,6 @@ export default function Page() {
 
   return (
     <section className="pt-28 px-3">
-      <Breadcrumb />
-
       <div className="container mx-auto pt-10 md:pt-20">
         <div className="max-w-4xl mx-auto">
           <div className="nav-custom-shadow bg-white/95 backdrop-blur rounded-2xl border border-lightBrand/25 overflow-hidden">
@@ -102,7 +179,7 @@ export default function Page() {
                   <h2 className="text-3xl md:text-5xl font-bebas text-dark text-shadow-light">
                     Account
                   </h2>
-                  <p className="font-jakarta text-gray-600">
+                  <p className="font-jakarta text-gray-600 text-sm">
                     Manage your profile, verification and password.
                   </p>
                 </div>
@@ -209,13 +286,6 @@ export default function Page() {
                         >
                           Refresh
                         </UiButton>
-
-                        <Link
-                          href="/wishlist"
-                          className="bg-white text-dark text-2xl font-bebas py-2 px-5 border-2 border-dark/20 rounded cardButtonHover text-shadow-lighter text-center"
-                        >
-                          Wishlist
-                        </Link>
                       </div>
                     </div>
                   </div>
@@ -391,6 +461,120 @@ export default function Page() {
                         </p>
                       </form>
                     </div>
+                  </div>
+
+                  {/* Orders */}
+                  <div className="mt-6 rounded-2xl border border-lightBrand/25 bg-white p-5 md:p-6">
+                    <div className="flex items-end justify-between gap-3 mb-4">
+                      <div>
+                        <h3 className="text-2xl md:text-3xl font-bebas text-dark text-shadow-lighter">
+                          My Orders
+                        </h3>
+                        <p className="font-jakarta text-sm text-gray-600">
+                          Latest orders and current status.
+                        </p>
+                      </div>
+
+                      <UiButton
+                        type="button"
+                        size="sm"
+                        variant="light"
+                        disabled={disableActions || ordersLoading}
+                        loading={ordersLoading}
+                        loadingText="Loading..."
+                        onClick={async () => {
+                          if (!user) return;
+                          setOrdersLoading(true);
+                          try {
+                            const res = await orderApi.my({ limit: 10 });
+                            setOrders(res?.data?.items || []);
+                          } catch (e) {
+                            toast.error(e?.message || "Failed to load orders");
+                          } finally {
+                            setOrdersLoading(false);
+                          }
+                        }}
+                      >
+                        Refresh Orders
+                      </UiButton>
+                    </div>
+
+                    {ordersLoading ? (
+                      <p className="font-jakarta text-gray-600">
+                        Loading orders...
+                      </p>
+                    ) : orders.length === 0 ? (
+                      <p className="font-jakarta text-gray-600">
+                        No orders yet.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left font-jakarta text-sm">
+                          <thead>
+                            <tr className="border-b text-xs uppercase tracking-wider text-gray-500">
+                              <th className="py-2 pr-3">Order</th>
+                              <th className="py-2 pr-3">Date</th>
+                              <th className="py-2 pr-3">Total</th>
+                              <th className="py-2 pr-3">Payment</th>
+                              <th className="py-2 pr-3">Status</th>
+                              <th className="py-2">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {orders.map((o) => (
+                              <tr
+                                key={o._id}
+                                className="border-b border-gray-100"
+                              >
+                                <td className="py-3 pr-3">
+                                  <div className="font-semibold text-dark">
+                                    {o.orderNumber || o._id}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    Items: {o.items?.length ?? 0}
+                                  </div>
+                                </td>
+                                <td className="py-3 pr-3">
+                                  {o.createdAt
+                                    ? new Date(o.createdAt).toLocaleString()
+                                    : "—"}
+                                </td>
+                                <td className="py-3 pr-3">
+                                  {Number(o.total || 0).toFixed(2)}{" "}
+                                  {o.currency || ""}
+                                </td>
+                                <td className="py-3 pr-3">
+                                  <span
+                                    className={`text-xs font-semibold px-2 py-1 rounded-full border ${badgeClass(
+                                      paymentVariant(o.paymentStatus),
+                                    )}`}
+                                  >
+                                    {o.paymentStatus || "—"}
+                                  </span>
+                                </td>
+                                <td className="py-3 pr-3">
+                                  <span
+                                    className={`text-xs font-semibold px-2 py-1 rounded-full border ${badgeClass(
+                                      statusVariant(o.status),
+                                    )}`}
+                                  >
+                                    {o.status || "—"}
+                                  </span>
+                                </td>
+                                <td className="py-3">
+                                  <Link
+                                    href={`/account/orders/${o._id}`}
+                                    className="text-brand hover:underline font-semibold"
+                                  >
+                                    View
+                                  </Link>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 </>
               )}

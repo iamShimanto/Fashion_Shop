@@ -9,7 +9,7 @@ export default function Breadcrumb() {
 
   return (
     <div
-      className="h-28  md:h-32 bg-cover bg-center px-3 over flow-hidden  flex items-center"
+      className="h-28 md:h-32 bg-cover bg-center px-3 overflow-hidden flex items-center"
       style={{ backgroundImage: "url('/breadcrumb.jpg')" }}
     >
       <div className="container flex items-center justify-between px-2   font-righteous">
@@ -17,7 +17,7 @@ export default function Breadcrumb() {
           aria-label="Breadcrumb"
           className="my-2  sm:my-3 lg:my-6 rounded-2xl"
         >
-          <ol className="flex items-center justify-center space-x-2 text-xl px-5 py-1 md:py-1.5 border-2 bg-black/30 border-brand rounded-lg  b w-fit ">
+          <ol className="flex items-center justify-center space-x-2 text-xl px-5 py-1 md:py-1.5 border-2 bg-black/30 border-brand rounded-lg w-fit">
             <li>
               <Link
                 href="/"

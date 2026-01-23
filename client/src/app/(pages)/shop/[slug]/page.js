@@ -1,4 +1,4 @@
-import Breadcrumb from "@/app/components/common-components/Breadcrumb";
+
 import ProductDetails from "@/app/components/productDetails-components/ProductDetails";
 import RelatedProductsSlider from "@/app/components/sliders/RelatedProductsSlider";
 import { notFound } from "next/navigation";
@@ -71,7 +71,6 @@ export default async function Page({ params }) {
 
   return (
     <section className="pt-[120px] px-3">
-      <Breadcrumb />
       <div className="container grid grid-cols-1 sm:grid-cols-2 gap-10 pt-10 md:pt-20 md:pb-20">
         <ProductDetails product={result.data} />
       </div>

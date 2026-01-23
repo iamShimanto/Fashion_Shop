@@ -10,17 +10,19 @@ import * as productApi from "../../lib/productApi";
 export default function ProductsList() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
 
   const params = useMemo(() => {
-    const p = { limit: 20 };
+    const p = { page, limit };
     if (q) p.q = q;
     if (status) p.status = status;
     return p;
-  }, [q, status]);
+  }, [page, limit, q, status]);
 
   const load = async () => {
     setLoading(true);
@@ -40,6 +42,9 @@ export default function ProductsList() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
+
+  const canPrev = page > 1;
+  const canNext = meta ? page < meta.pages : false;
 
   const onDelete = async (id) => {
     if (!confirm("Delete this product?")) return;
@@ -80,12 +85,15 @@ export default function ProductsList() {
           </Button>
         }
       >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
           <Input
             label="Search"
             placeholder="Title, vendor, tag…"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => {
+              setPage(1);
+              setQ(e.target.value);
+            }}
           />
           <label className="block">
             <div className="mb-1 text-sm font-semibold text-dark/90">
@@ -94,7 +102,10 @@ export default function ProductsList() {
             <select
               className="w-full rounded-lg border border-dark/15 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25"
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => {
+                setPage(1);
+                setStatus(e.target.value);
+              }}
             >
               <option value="">All</option>
               <option value="active">Active</option>
@@ -102,7 +113,26 @@ export default function ProductsList() {
               <option value="archived">Archived</option>
             </select>
           </label>
-          <div className="flex items-end">
+          <label className="block">
+            <div className="mb-1 text-sm font-semibold text-dark/90">
+              Per page
+            </div>
+            <select
+              className="w-full rounded-lg border border-dark/15 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25"
+              value={String(limit)}
+              onChange={(e) => {
+                setPage(1);
+                setLimit(Number(e.target.value));
+              }}
+            >
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+
+          <div className="flex items-end justify-between gap-3">
             <div className="text-xs text-dark/55">
               {meta ? (
                 <>
@@ -114,9 +144,38 @@ export default function ProductsList() {
             </div>
           </div>
         </div>
+
+        <div className="mt-3 flex items-center justify-end gap-2">
+          <Button
+            variant="outline"
+            disabled={!canPrev}
+            onClick={() => canPrev && setPage((p) => p - 1)}
+          >
+            Prev
+          </Button>
+          <div className="text-sm text-dark/70">
+            Page <span className="font-semibold">{meta?.page || page}</span>
+            {meta?.pages ? (
+              <>
+                {" "}
+                of <span className="font-semibold">{meta.pages}</span>
+              </>
+            ) : null}
+          </div>
+          <Button
+            variant="outline"
+            disabled={!canNext}
+            onClick={() => canNext && setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+        </div>
       </Card>
 
-      <Card title="All Products">
+      <Card
+        title="All Products"
+        subtitle={meta ? `Page ${meta.page} of ${meta.pages}` : ""}
+      >
         {loading ? (
           <div className="py-8 grid place-items-center">
             <Spinner label="Loading products…" />
@@ -188,6 +247,30 @@ export default function ProductsList() {
             </table>
           </div>
         )}
+
+        {meta?.pages ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="text-xs text-dark/55">
+              Showing {items.length} of {meta.total}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                disabled={!canPrev}
+                onClick={() => canPrev && setPage((p) => p - 1)}
+              >
+                Prev
+              </Button>
+              <Button
+                variant="outline"
+                disabled={!canNext}
+                onClick={() => canNext && setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Card>
     </div>
   );

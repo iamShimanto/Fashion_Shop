@@ -49,7 +49,7 @@ const ElivateStyle = () => {
             <Link
               data-aos="fade-in"
               data-aos-duration="1200"
-              href="/"
+              href={{ pathname: "/shop", query: { onSale: "true" } }}
               className="block text-center overflow-hidden duration-150 transition group"
             >
               <div className="relative aspect-square rounded-lg overflow-hidden">
@@ -75,7 +75,7 @@ const ElivateStyle = () => {
             <Link
               data-aos="fade-in"
               data-aos-duration="1500"
-              href="/"
+              href={{ pathname: "/shop", query: { sort: "bestSeller" } }}
               className="block text-center overflow-hidden duration-150 transition group"
             >
               <div className="relative aspect-square rounded-lg overflow-hidden">

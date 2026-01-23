@@ -3,8 +3,12 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCart } from "@/app/providers/CartProvider";
 
 export default function ProductDetails({ product }) {
+  const router = useRouter();
+  const { addItem } = useCart();
   const safeImages =
     Array.isArray(product?.images) && product.images.length > 0
       ? product.images
@@ -191,6 +195,13 @@ export default function ProductDetails({ product }) {
         <div className="flex flex-col md:flex-row gap-4 border-b border-dark/20 pb-4">
           <button
             disabled={!inStock}
+            onClick={() =>
+              addItem(product, {
+                quantity,
+                size: selectedSize,
+                color: safeColors?.[0] || null,
+              })
+            }
             className="flex-1 py-1.5 bg-dark text-2xl lg:text-4xl font-bebas cardButtonHover border-3 border-dark text-white rounded shadow hover:text-dark/90 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {inStock
@@ -198,7 +209,17 @@ export default function ProductDetails({ product }) {
               : "Out of Stock"}
           </button>
           <Link
-            href={"/payment"}
+            href={"/confirmOrder"}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!inStock) return;
+              addItem(product, {
+                quantity,
+                size: selectedSize,
+                color: safeColors?.[0] || null,
+              });
+              router.push("/confirmOrder");
+            }}
             className=" flex-1 text-center py-1.5 bg-brand text-2xl lg:text-4xl font-bebas cardButtonHover border-3 border-brand text-white rounded shadow hover:text-dark/90 cursor-pointer"
           >
             Buy It Now

@@ -7,9 +7,26 @@ const navLinkClass = ({ isActive }) =>
     ? "bg-brand text-white"
     : "text-dark/80 hover:bg-dark/5 hover:text-dark");
 
-export default function Sidebar() {
+export default function Sidebar({
+  variant = "desktop",
+  open = false,
+  onClose,
+  onNavigate,
+}) {
+  const isMobile = variant === "mobile";
+
+  const asideClass = isMobile
+    ? "fixed inset-y-0 left-0 z-40 w-72 max-w-[85vw] border-r border-dark/10 bg-white shadow-xl transition-transform duration-200 md:hidden " +
+      (open ? "translate-x-0" : "-translate-x-full")
+    : "hidden md:block w-64 shrink-0 border-r border-dark/10 bg-white";
+
+  const handleNavigate = () => {
+    if (typeof onNavigate === "function") onNavigate();
+    if (isMobile && typeof onClose === "function") onClose();
+  };
+
   return (
-    <aside className="hidden md:block w-64 shrink-0 border-r border-dark/10 bg-white">
+    <aside className={asideClass} aria-hidden={isMobile ? !open : undefined}>
       <div className="px-5 py-5">
         <Link to="/" className="block">
           <div className="text-lg font-extrabold tracking-tight text-dark">
@@ -24,16 +41,19 @@ export default function Sidebar() {
           Main
         </div>
         <div className="space-y-1">
-          <NavLink to="/" end className={navLinkClass}>
+          <NavLink to="/" end className={navLinkClass} onClick={handleNavigate}>
             Dashboard
           </NavLink>
-          <NavLink to="/products" className={navLinkClass}>
+          <NavLink to="/users" className={navLinkClass} onClick={handleNavigate}>
+            Users
+          </NavLink>
+          <NavLink to="/products" className={navLinkClass} onClick={handleNavigate}>
             Products
           </NavLink>
-          <NavLink to="/orders" className={navLinkClass}>
+          <NavLink to="/orders" className={navLinkClass} onClick={handleNavigate}>
             Orders
           </NavLink>
-          <NavLink to="/analytics" className={navLinkClass}>
+          <NavLink to="/analytics" className={navLinkClass} onClick={handleNavigate}>
             Analytics
           </NavLink>
         </div>
@@ -42,7 +62,7 @@ export default function Sidebar() {
           Settings
         </div>
         <div className="space-y-1">
-          <NavLink to="/settings" className={navLinkClass}>
+          <NavLink to="/settings" className={navLinkClass} onClick={handleNavigate}>
             Settings
           </NavLink>
         </div>

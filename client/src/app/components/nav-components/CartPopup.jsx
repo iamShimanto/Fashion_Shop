@@ -4,8 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import { HiOutlineX } from "react-icons/hi";
+import { useCart } from "@/app/providers/CartProvider";
 
 export default function CartPopup({ isOpen, onClose }) {
+  const { items, removeItem, subtotal } = useCart();
+
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === "Escape") onClose();
@@ -50,33 +53,43 @@ export default function CartPopup({ isOpen, onClose }) {
           </h2>
 
           <div className="flex flex-col gap-4">
-            {[
-              { id: 1, name: "Contrasting sheepskin", price: 60 },
-              { id: 2, name: "Suede leggings", price: 60 },
-              { id: 3, name: "Faux-leather trousers", price: 60 },
-            ].map((item) => (
-              <div key={item.id} className="flex gap-3 items-center">
-                <div className="w-16 h-16 rounded overflow-hidden">
-                  <Image
-                    src="/men.jpeg"
-                    alt={item.name}
-                    width={64}
-                    height={64}
-                    className="object-cover"
-                  />
-                </div>
-
-                <div className="flex-1">
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-sm text-gray-500">XL / Blue</p>
-                  <p className="text-sm">1 x ${item.price.toFixed(2)}</p>
-                </div>
-
-                <button className="text-red-400 text-lg cursor-pointer hover:text-red-600">
-                  <HiOutlineX />
-                </button>
+            {items.length === 0 ? (
+              <div className="py-10 text-center text-sm text-dark/60">
+                Your cart is empty.
               </div>
-            ))}
+            ) : (
+              items.map((item) => (
+                <div key={item.key} className="flex gap-3 items-center">
+                  <div className="w-16 h-16 rounded overflow-hidden">
+                    <Image
+                      src={item.image || "/men.jpeg"}
+                      alt={item.name || "image"}
+                      width={64}
+                      height={64}
+                      className="object-cover"
+                    />
+                  </div>
+
+                  <div className="flex-1">
+                    <p className="font-medium">{item.title}</p>
+                    <p className="text-sm text-gray-500">
+                      {(item.size || "—") + " / " + (item.color?.name || "—")}
+                    </p>
+                    <p className="text-sm">
+                      {item.quantity} x $
+                      {Number(item.unitPrice || 0).toFixed(2)}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => removeItem(item.key)}
+                    className="text-red-400 text-lg cursor-pointer hover:text-red-600"
+                  >
+                    <HiOutlineX />
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -85,7 +98,7 @@ export default function CartPopup({ isOpen, onClose }) {
           <div className="flex justify-between font-semibold font-jakarta text-lg">
             <span>Subtotal</span>
             <span className="font-bebas text-2xl md:text-3xl text-dark/90">
-              $186.99
+              ${Number(subtotal || 0).toFixed(2)}
             </span>
           </div>
 
@@ -110,6 +123,7 @@ export default function CartPopup({ isOpen, onClose }) {
             <Link
               href="/confirmOrder"
               onClick={onClose}
+              aria-disabled={items.length === 0}
               className="w-1/2 py-1 text-center text-2xl md:text-3xl bg-brand text-white rounded border-2 border-brand duration-150 hover:text-dark text-glow font-bebas cardButtonHover cursor-pointer"
             >
               Check Out

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Product = require("../models/product.model");
+const Order = require("../models/order.model");
 const { successResponse, errorResponse } = require("../utils/responseHandler");
 const slugify = require("../utils/slugify");
 const {
@@ -17,6 +18,16 @@ function parseJsonMaybe(value, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function escapeRegex(text) {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function truthyQuery(value) {
+  if (value === undefined || value === null) return false;
+  const v = String(value).trim().toLowerCase();
+  return v === "true" || v === "1" || v === "yes" || v === "on";
 }
 
 async function generateUniqueSlug(base, productIdToExclude) {
@@ -58,6 +69,8 @@ const listProducts = async (req, res) => {
 
     const q = (req.query.q || "").toString().trim();
     const category = (req.query.category || "").toString().trim();
+    const gender = (req.query.gender || "").toString().trim().toLowerCase();
+    const onSale = truthyQuery(req.query.onSale);
 
     const minPrice =
       req.query.minPrice !== undefined ? Number(req.query.minPrice) : null;
@@ -69,7 +82,21 @@ const listProducts = async (req, res) => {
     // Public endpoint: ALWAYS restrict to active products
     filter.status = "active";
 
-    if (category) filter.categories = category;
+    if (gender && ["men", "women", "unisex"].includes(gender)) {
+      filter.gender = gender;
+    }
+
+    if (category) {
+      filter.categories = {
+        $regex: `^${escapeRegex(category)}$`,
+        $options: "i",
+      };
+    }
+
+    if (onSale) {
+      filter.compareAtPrice = { $ne: null };
+      filter.$expr = { $gt: ["$compareAtPrice", "$price"] };
+    }
 
     if (q) {
       filter.$or = [
@@ -89,6 +116,60 @@ const listProducts = async (req, res) => {
     }
 
     const sortParam = (req.query.sort || "newest").toString();
+
+    // Best-seller sort uses Orders aggregation and preserves ranking order.
+    if (sortParam === "bestSeller") {
+      const top = await Order.aggregate([
+        { $match: { status: { $ne: "cancelled" } } },
+        { $unwind: "$items" },
+        { $match: { "items.product": { $type: "objectId" } } },
+        {
+          $group: {
+            _id: "$items.product",
+            qty: { $sum: "$items.quantity" },
+          },
+        },
+        { $sort: { qty: -1 } },
+        { $limit: 500 },
+      ]);
+
+      const rankedIds = top.map((x) => String(x._id));
+      if (rankedIds.length === 0) {
+        return successResponse(res, 200, "Products fetched", {
+          items: [],
+          meta: { page, limit, total: 0, pages: 0 },
+        });
+      }
+
+      const rankedSet = new Set(rankedIds);
+      const products = await Product.find({
+        ...filter,
+        _id: { $in: Array.from(rankedSet) },
+      });
+
+      const byRank = new Map(rankedIds.map((id, idx) => [id, idx]));
+      const rankedProducts = products
+        .slice()
+        .sort(
+          (a, b) =>
+            (byRank.get(String(a._id)) ?? Number.MAX_SAFE_INTEGER) -
+            (byRank.get(String(b._id)) ?? Number.MAX_SAFE_INTEGER),
+        );
+
+      const total = rankedProducts.length;
+      const paged = rankedProducts.slice(skip, skip + limit);
+
+      return successResponse(res, 200, "Products fetched", {
+        items: paged.map(toClientProduct),
+        meta: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      });
+    }
+
     const sort =
       sortParam === "priceLowHigh"
         ? { price: 1 }
@@ -124,6 +205,8 @@ const listProductsAdmin = async (req, res) => {
     const q = (req.query.q || "").toString().trim();
     const category = (req.query.category || "").toString().trim();
     const status = (req.query.status || "").toString().trim();
+    const gender = (req.query.gender || "").toString().trim().toLowerCase();
+    const onSale = truthyQuery(req.query.onSale);
 
     const minPrice =
       req.query.minPrice !== undefined ? Number(req.query.minPrice) : null;
@@ -132,7 +215,20 @@ const listProductsAdmin = async (req, res) => {
 
     const filter = {};
     if (status) filter.status = status;
-    if (category) filter.categories = category;
+    if (gender && ["men", "women", "unisex"].includes(gender)) {
+      filter.gender = gender;
+    }
+    if (category) {
+      filter.categories = {
+        $regex: `^${escapeRegex(category)}$`,
+        $options: "i",
+      };
+    }
+
+    if (onSale) {
+      filter.compareAtPrice = { $ne: null };
+      filter.$expr = { $gt: ["$compareAtPrice", "$price"] };
+    }
 
     if (q) {
       filter.$or = [
@@ -154,6 +250,55 @@ const listProductsAdmin = async (req, res) => {
     }
 
     const sortParam = (req.query.sort || "newest").toString();
+
+    if (sortParam === "bestSeller") {
+      const top = await Order.aggregate([
+        { $match: { status: { $ne: "cancelled" } } },
+        { $unwind: "$items" },
+        { $match: { "items.product": { $type: "objectId" } } },
+        {
+          $group: {
+            _id: "$items.product",
+            qty: { $sum: "$items.quantity" },
+          },
+        },
+        { $sort: { qty: -1 } },
+        { $limit: 500 },
+      ]);
+
+      const rankedIds = top.map((x) => String(x._id));
+      const rankedSet = new Set(rankedIds);
+
+      const products = rankedIds.length
+        ? await Product.find({
+            ...filter,
+            _id: { $in: Array.from(rankedSet) },
+          })
+        : [];
+
+      const byRank = new Map(rankedIds.map((id, idx) => [id, idx]));
+      const rankedProducts = products
+        .slice()
+        .sort(
+          (a, b) =>
+            (byRank.get(String(a._id)) ?? Number.MAX_SAFE_INTEGER) -
+            (byRank.get(String(b._id)) ?? Number.MAX_SAFE_INTEGER),
+        );
+
+      const total = rankedProducts.length;
+      const paged = rankedProducts.slice(skip, skip + limit);
+
+      return successResponse(res, 200, "Products fetched", {
+        items: paged.map(toClientProduct),
+        meta: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      });
+    }
+
     const sort =
       sortParam === "priceLowHigh"
         ? { price: 1 }
@@ -271,6 +416,7 @@ const createProduct = async (req, res) => {
       currency,
       sku,
       vendor,
+      gender,
       categories,
       tags,
       colors,
@@ -344,6 +490,8 @@ const createProduct = async (req, res) => {
       images.push({ url: uploaded.secure_url, publicId: uploaded.public_id });
     }
 
+    const normalizedGender = (gender || "").toString().trim().toLowerCase();
+
     const product = await Product.create({
       title,
       slug: desiredSlug,
@@ -358,6 +506,9 @@ const createProduct = async (req, res) => {
       currency: currency || "USD",
       sku: sku || undefined,
       vendor: vendor || "",
+      gender: ["men", "women", "unisex"].includes(normalizedGender)
+        ? normalizedGender
+        : "unisex",
       categories: Array.isArray(parsedCategories)
         ? parsedCategories
         : typeof parsedCategories === "string" && parsedCategories
@@ -412,6 +563,7 @@ const updateProduct = async (req, res) => {
       currency,
       sku,
       vendor,
+      gender,
       categories,
       tags,
       colors,
@@ -430,6 +582,13 @@ const updateProduct = async (req, res) => {
     if (currency !== undefined) product.currency = currency;
     if (sku !== undefined) product.sku = sku || undefined;
     if (vendor !== undefined) product.vendor = vendor;
+
+    if (gender !== undefined) {
+      const normalizedGender = (gender || "").toString().trim().toLowerCase();
+      if (["men", "women", "unisex"].includes(normalizedGender)) {
+        product.gender = normalizedGender;
+      }
+    }
     if (status !== undefined) product.status = status;
     if (isFeatured !== undefined)
       product.isFeatured = String(isFeatured) === "true" || isFeatured === true;

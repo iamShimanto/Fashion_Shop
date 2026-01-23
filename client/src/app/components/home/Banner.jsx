@@ -44,29 +44,6 @@ const Banner = () => {
 
       <div className="absolute inset-0 bg-black/50 z-10"></div>
 
-      <div
-        ref={dropdownRef}
-        className="absolute top-[12%] left-6 z-50 flex items-start gap-0.5"
-      >
-        <button
-          onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="bg-white p-2 h-fit rounded-full text-xl lg:text-2xl hover:text-brand duration-150"
-        >
-          <GrLanguage />
-        </button>
-
-        {dropdownOpen && (
-          <ul className="mt-2 bg-white rounded shadow-lg w-32 text-left">
-            <li className="px-4 py-1 hover:bg-gray-200 cursor-pointer font-jakarta">
-              English
-            </li>
-            <li className="px-4 py-1 hover:bg-gray-200 cursor-pointer font-jakarta">
-              বাংলা
-            </li>
-          </ul>
-        )}
-      </div>
-
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center z-20 px-4">
         <h1
           data-aos="fade-right"
@@ -94,7 +71,7 @@ const Banner = () => {
         </h1>
 
         <BrandButton
-          href="shop"
+          href="/shop"
           text="shop now"
           className="text-white mt-13 md:mt-20"
         />

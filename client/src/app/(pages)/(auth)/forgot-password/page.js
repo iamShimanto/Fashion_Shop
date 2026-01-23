@@ -1,6 +1,5 @@
 "use client";
 
-import Breadcrumb from "@/app/components/common-components/Breadcrumb";
 import { authApi } from "@/app/lib/authApi";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
@@ -45,7 +44,6 @@ export default function Page() {
 
   return (
     <UiSection>
-      <Breadcrumb />
 
       <div className="container mx-auto pt-10 md:pt-20">
         <div className="max-w-xl mx-auto">

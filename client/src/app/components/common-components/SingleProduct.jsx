@@ -9,8 +9,8 @@ const SingleProduct = ({ image, title, price, slug, href }) => {
   const finalHref =
     href ||
     (safeSlug
-      ? `/productDetails/${encodeURIComponent(safeSlug)}`
-      : "/productDetails");
+      ? `/shop/${encodeURIComponent(safeSlug)}`
+      : "/shop");
 
   return (
     <div className="rounded-2xl overflow-hidden group w-full">

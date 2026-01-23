@@ -1,11 +1,10 @@
-import Breadcrumb from "@/app/components/common-components/Breadcrumb";
+
 import SingleProduct from "@/app/components/common-components/SingleProduct";
 import React from "react";
 
 const Page = () => {
   return (
     <section className="pt-25 pb-20 px-3">
-      <Breadcrumb />
       <p className="container pt-15 text-dark text-2xl font-poppins text-shadow-lighter">
         You have total <span className="text-3xl font-bebas">12</span> products
         in your wishlist

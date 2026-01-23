@@ -122,14 +122,6 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/size-guide"
-                  className="text-md text-dark/70 font-jakarta hover:text-brand duration-150 lg:hover:ml-2"
-                >
-                  Size Guide
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/contact"
                   className="text-md text-dark/70 font-jakarta hover:text-brand duration-150 lg:hover:ml-2"
                 >
@@ -202,14 +194,6 @@ export default function Footer() {
                   className="text-md text-dark/70 font-jakarta hover:text-brand duration-150 lg:hover:ml-2"
                 >
                   Orders FAQs
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/wishlist"
-                  className="text-md text-dark/70 font-jakarta hover:text-brand duration-150 lg:hover:ml-2"
-                >
-                  My Wishlist
                 </Link>
               </li>
             </ul>

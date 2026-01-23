@@ -61,6 +61,9 @@ const logInUser = async (req, res) => {
     if (!user) {
       return errorResponse(res, 404, "User not found");
     }
+    if (user.isBlocked) {
+      return errorResponse(res, 403, "Your account is blocked");
+    }
     const comparePassword = await bcrypt.compare(password, user.password);
     if (!comparePassword)
       return errorResponse(res, 401, "Access Denied, Wrong Password");

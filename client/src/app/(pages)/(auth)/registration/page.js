@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Breadcrumb from "@/app/components/common-components/Breadcrumb";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -32,7 +31,6 @@ const Page = () => {
 
   return (
     <UiSection>
-      <Breadcrumb />
 
       <div className="container mx-auto pt-10 md:pt-20">
         <div className="flex flex-col md:flex-row items-start justify-center gap-5 md:gap-10">

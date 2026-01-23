@@ -25,7 +25,7 @@ const Collections = () => {
 
       <div className="container grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-5 lg:gap-6 xl:gap-8 items-center pt-10">
         <Link
-          href={"/shop"}
+          href={{ pathname: "/shop", query: { gender: "men" } }}
           data-aos="fade-up"
           data-aos-duration="600"
           className="group relative h-[50dvh] sm:h-[70dvh] bg-cover rounded-2xl shadow-lg flex justify-center items-center p-5 overflow-hidden"
@@ -39,7 +39,7 @@ const Collections = () => {
         </Link>
 
         <Link
-          href={"/shop"}
+          href={{ pathname: "/shop", query: { gender: "women" } }}
           data-aos="fade-up"
           data-aos-duration="800"
           className="group relative h-[50dvh] sm:h-[70dvh] bg-cover rounded-2xl text-shadow-lighter! shadow-lg flex justify-center items-center p-5 overflow-hidden"
