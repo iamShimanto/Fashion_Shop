@@ -45,7 +45,7 @@ export async function apiRequest(path, options = {}) {
     // Fallback helps avoid a hard crash in dev when env is misconfigured.
     // Prefer setting NEXT_PUBLIC_API_BASE_URL in client/.env.development.
     throw new ApiError(
-      "NEXT_PUBLIC_API_BASE_URL is not set. Set it (example: http://localhost:5000 or http://localhost:5000/api).",
+      "NEXT_PUBLIC_API_BASE_URL is not set. Set it (example: http://localhost:5000 or https://fashion-server.shimanto.dev/api).",
     );
   }
 

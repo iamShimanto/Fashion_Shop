@@ -5,7 +5,7 @@ import { getApiBaseUrl } from "@/app/lib/seo";
 import { absoluteUrl, getSiteUrl } from "@/app/lib/seo";
 
 async function fetchProduct(slug) {
-  const base = getApiBaseUrl() || "http://localhost:5000/api";
+  const base = getApiBaseUrl() || "https://fashion-server.shimanto.dev/api";
 
   const res = await fetch(`${base}/products/slug/${slug}`, {
     cache: "no-store",
@@ -89,7 +89,7 @@ export async function generateMetadata({ params }) {
 }
 
 async function fetchRelatedProducts(product) {
-  const base = getApiBaseUrl() || "http://localhost:5000/api";
+  const base = getApiBaseUrl() || "https://fashion-server.shimanto.dev/api";
 
   const category =
     Array.isArray(product?.categories) && product.categories.length > 0

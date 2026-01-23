@@ -7,7 +7,8 @@ export default function Settings() {
   const { user, loading, refresh, logout } = useAuth();
 
   const apiBase =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+    import.meta.env.VITE_API_BASE_URL ||
+    "https://fashion-server.shimanto.dev/api";
   const mode = import.meta.env.MODE || "development";
 
   return (
