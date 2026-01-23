@@ -1,43 +1,37 @@
 import ProductDetails from "@/app/components/productDetails-components/ProductDetails";
 import RelatedProductsSlider from "@/app/components/sliders/RelatedProductsSlider";
 import { notFound } from "next/navigation";
-import { getApiBaseUrl } from "@/app/lib/seo";
-import { absoluteUrl, getSiteUrl } from "@/app/lib/seo";
+import { absoluteUrl, getApiBaseUrl, getSiteUrl } from "@/app/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-async function fetchProduct(slug) {
-  const base = getApiBaseUrl() || "https://fashion-server.shimanto.dev/api";
+function getApiBaseUrlOrThrow() {
+  const base = getApiBaseUrl();
+  if (base) return base;
 
-  const res = await fetch(`${base}/products/slug/${slug}`, {
-    cache: "no-store",
-  });
+  // In dev, allow a sensible default.
+  if (process.env.NODE_ENV !== "production") return "http://localhost:5000/api";
 
-  const payload = await res.json().catch(() => null);
+  throw new Error(
+    "NEXT_PUBLIC_API_BASE_URL is not set. Set it to your API origin (optionally including /api).",
+  );
+}
 
-  // Only treat as a real "not found" when the API returns a JSON payload.
-  // Misconfigured API base can return an HTML 404 which would otherwise mask issues.
-  if (res.status === 404) {
-    const apiSaysNotFound =
-      payload &&
-      (payload?.success === false ||
-        /not found/i.test(String(payload?.message || "")));
+async function getSlug(params) {
+  const resolved = await Promise.resolve(params);
+  const slug = resolved?.slug;
+  if (!slug) return null;
+  return String(slug).trim() || null;
+}
 
-    if (apiSaysNotFound) return { notFound: true };
-
-    throw new Error(
-      `Product fetch returned 404 from ${base}. Check NEXT_PUBLIC_API_BASE_URL and production deploy env.`,
-    );
-  }
-
-  if (!res.ok || payload?.success === false) {
-    const message =
-      payload?.message || `Failed to load product (${res.status})`;
-    throw new Error(message);
-  }
-
-  return { data: payload.data };
+function buildDescription(product) {
+  const desc =
+    product?.shortDescription ||
+    product?.description ||
+    product?.details ||
+    "Shop this product on Shimanto.";
+  return String(desc).replace(/\s+/g, " ").trim().slice(0, 160);
 }
 
 function pickImageUrl(product) {
@@ -50,66 +44,40 @@ function pickImageUrl(product) {
   return url.startsWith("http") ? url : absoluteUrl(url);
 }
 
-function buildDescription(product) {
-  const desc =
-    product?.shortDescription ||
-    product?.description ||
-    product?.details ||
-    "Shop this product on Shimanto.";
-  return String(desc).replace(/\s+/g, " ").trim().slice(0, 160);
-}
+async function fetchProductBySlug(slug) {
+  const base = getApiBaseUrlOrThrow();
 
-export async function generateMetadata({ params }) {
-  try {
-    const result = await fetchProduct(params.slug);
-    if (result.notFound) {
-      return {
-        title: "Product not found",
-        robots: { index: false, follow: false },
-      };
-    }
+  const res = await fetch(`${base}/products/slug/${encodeURIComponent(slug)}`, {
+    cache: "no-store",
+  });
 
-    const product = result.data;
-    const title = product?.title ? String(product.title) : "Product";
-    const description = buildDescription(product);
-    const image = pickImageUrl(product);
+  const payload = await res.json().catch(() => null);
 
-    const site = getSiteUrl();
-    const canonical = new URL(`/shop/${params.slug}`, site).toString();
+  if (res.status === 404) {
+    // Only treat as a real "not found" when API returns expected JSON.
+    const apiSaysNotFound =
+      payload &&
+      (payload?.success === false ||
+        /not found/i.test(String(payload?.message || "")));
 
-    return {
-      title,
-      description,
-      alternates: {
-        canonical,
-      },
-      openGraph: {
-        type: "website",
-        url: canonical,
-        title,
-        description,
-        images: [{ url: image }],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description,
-        images: [image],
-      },
-    };
-  } catch {
-    return {
-      title: "Product",
-      description: "View product details on Shimanto.",
-      alternates: {
-        canonical: `/shop/${params.slug}`,
-      },
-    };
+    if (apiSaysNotFound) return { notFound: true };
+
+    throw new Error(
+      `Product fetch returned 404 from ${base}. Check NEXT_PUBLIC_API_BASE_URL and deployment routing to API.`,
+    );
   }
+
+  if (!res.ok || payload?.success === false) {
+    const message =
+      payload?.message || `Failed to load product (${res.status})`;
+    throw new Error(message);
+  }
+
+  return { data: payload.data };
 }
 
 async function fetchRelatedProducts(product) {
-  const base = getApiBaseUrl() || "https://fashion-server.shimanto.dev/api";
+  const base = getApiBaseUrlOrThrow();
 
   const category =
     Array.isArray(product?.categories) && product.categories.length > 0
@@ -139,14 +107,71 @@ async function fetchRelatedProducts(product) {
     .slice(0, 10);
 }
 
+export async function generateMetadata({ params }) {
+  const slug = await getSlug(params);
+  if (!slug) {
+    return {
+      title: "Product not found",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  try {
+    const result = await fetchProductBySlug(slug);
+    if (result.notFound) {
+      return {
+        title: "Product not found",
+        robots: { index: false, follow: false },
+      };
+    }
+
+    const product = result.data;
+    const title = product?.title ? String(product.title) : "Product";
+    const description = buildDescription(product);
+    const image = pickImageUrl(product);
+
+    const site = getSiteUrl();
+    const canonical = new URL(`/shop/${slug}`, site).toString();
+
+    return {
+      title,
+      description,
+      alternates: { canonical },
+      openGraph: {
+        type: "website",
+        url: canonical,
+        title,
+        description,
+        images: [{ url: image }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [image],
+      },
+    };
+  } catch {
+    return {
+      title: "Product",
+      description: "View product details on Shimanto.",
+      alternates: { canonical: `/shop/${slug}` },
+    };
+  }
+}
+
 export default async function Page({ params }) {
-  const result = await fetchProduct(params.slug);
+  const slug = await getSlug(params);
+  if (!slug) notFound();
+
+  const result = await fetchProductBySlug(slug);
   if (result.notFound) notFound();
 
-  const related = await fetchRelatedProducts(result.data);
   const product = result.data;
+  const related = await fetchRelatedProducts(product);
+
   const site = getSiteUrl();
-  const productUrl = new URL(`/shop/${params.slug}`, site).toString();
+  const productUrl = new URL(`/shop/${slug}`, site).toString();
   const imageUrl = pickImageUrl(product);
 
   const productJsonLd = {
