@@ -277,6 +277,8 @@ const createProduct = async (req, res) => {
       sizes,
       status,
       isFeatured,
+      inventory,
+      inventoryTrack,
       inventoryQuantity,
     } = req.body;
 
@@ -316,6 +318,25 @@ const createProduct = async (req, res) => {
     const parsedColors = parseJsonMaybe(colors, colors);
     const parsedSizes = parseJsonMaybe(sizes, sizes);
 
+    const parsedInventory = parseJsonMaybe(inventory, undefined);
+    const trackInventory =
+      parsedInventory && typeof parsedInventory === "object"
+        ? parsedInventory.track
+        : inventoryTrack;
+    const resolvedTrack =
+      trackInventory === undefined
+        ? true
+        : String(trackInventory) === "true" || trackInventory === true;
+
+    const rawQuantity =
+      parsedInventory && typeof parsedInventory === "object"
+        ? parsedInventory.quantity
+        : inventoryQuantity;
+    const resolvedQuantity =
+      rawQuantity !== undefined && rawQuantity !== null
+        ? Math.max(0, Number(rawQuantity) || 0)
+        : 0;
+
     const images = [];
     const files = req.files || [];
     for (const file of files) {
@@ -353,11 +374,8 @@ const createProduct = async (req, res) => {
       status: status || "active",
       isFeatured: String(isFeatured) === "true" || isFeatured === true,
       inventory: {
-        track: true,
-        quantity:
-          inventoryQuantity !== undefined && inventoryQuantity !== null
-            ? Math.max(0, Number(inventoryQuantity) || 0)
-            : 0,
+        track: resolvedTrack,
+        quantity: resolvedQuantity,
       },
     });
 
@@ -400,6 +418,8 @@ const updateProduct = async (req, res) => {
       sizes,
       status,
       isFeatured,
+      inventory,
+      inventoryTrack,
       inventoryQuantity,
       removeImagePublicIds,
       replaceImages,
@@ -444,6 +464,26 @@ const updateProduct = async (req, res) => {
         400,
         "compareAtPrice must be greater than or equal to price",
       );
+    }
+
+    const parsedInventory = parseJsonMaybe(inventory, undefined);
+    if (parsedInventory && typeof parsedInventory === "object") {
+      if (parsedInventory.track !== undefined) {
+        product.inventory.track =
+          String(parsedInventory.track) === "true" ||
+          parsedInventory.track === true;
+      }
+      if (parsedInventory.quantity !== undefined) {
+        product.inventory.quantity = Math.max(
+          0,
+          Number(parsedInventory.quantity) || 0,
+        );
+      }
+    }
+
+    if (inventoryTrack !== undefined) {
+      product.inventory.track =
+        String(inventoryTrack) === "true" || inventoryTrack === true;
     }
 
     if (inventoryQuantity !== undefined) {

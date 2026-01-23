@@ -6,7 +6,9 @@ import { Splide, SplideSlide } from "@splidejs/react-splide";
 import { AutoScroll } from "@splidejs/splide-extension-auto-scroll";
 import SingleProduct from "../common-components/SingleProduct";
 
-const RelatedProductsSlider = () => {
+const RelatedProductsSlider = ({ products = [] }) => {
+  const items = Array.isArray(products) ? products : [];
+
   return (
     <section className=" sm:px-6 lg:px-10 ">
       <div className="container mx-auto">
@@ -45,45 +47,27 @@ const RelatedProductsSlider = () => {
           aria-label="Our Products"
           className="pb-6"
         >
-          <SplideSlide>
-            <SingleProduct
-              image="/product-2.jpeg"
-              title="Classic Hoodie"
-              price={49.99}
-            />
-          </SplideSlide>
-
-          <SplideSlide>
-            <SingleProduct
-              image="/product-2.jpeg"
-              title="Comfort T-Shirt"
-              price={29.99}
-            />
-          </SplideSlide>
-
-          <SplideSlide>
-            <SingleProduct
-              image="/product-2.jpeg"
-              title="Stylish Jeans"
-              price={59.99}
-            />
-          </SplideSlide>
-
-          <SplideSlide>
-            <SingleProduct
-              image="/product-2.jpeg"
-              title="Casual Jacket"
-              price={79.99}
-            />
-          </SplideSlide>
-
-          <SplideSlide>
-            <SingleProduct
-              image="/product-2.jpeg"
-              title="Urban Sneakers"
-              price={89.99}
-            />
-          </SplideSlide>
+          {items.length > 0 ? (
+            items.map((p) => (
+              <SplideSlide key={p._id || p.slug || p.title}>
+                <SingleProduct
+                  image={p.images?.[0] || "/product-2.jpeg"}
+                  title={p.title}
+                  price={Number(p.price || 0)}
+                  slug={p.slug}
+                />
+              </SplideSlide>
+            ))
+          ) : (
+            <SplideSlide>
+              <SingleProduct
+                image="/product-2.jpeg"
+                title="No related products yet"
+                price={0}
+                href="/shop"
+              />
+            </SplideSlide>
+          )}
         </Splide>
       </div>
     </section>

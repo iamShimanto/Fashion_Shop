@@ -1,4 +1,8 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_BASE_URL =
+  typeof rawBaseUrl === "string"
+    ? rawBaseUrl.replace(/^['"]|['"]$/g, "").trim()
+    : rawBaseUrl;
 
 export class ApiError extends Error {
   constructor(message, { status, payload } = {}) {
@@ -21,8 +25,10 @@ async function parseJsonSafe(res) {
 
 export async function apiRequest(path, options = {}) {
   if (!API_BASE_URL) {
+    // Fallback helps avoid a hard crash in dev when env is misconfigured.
+    // Prefer setting NEXT_PUBLIC_API_BASE_URL in client/.env.development.
     throw new ApiError(
-      "NEXT_PUBLIC_API_BASE_URL is not set. Check client/.env.development",
+      "NEXT_PUBLIC_API_BASE_URL is not set. Set it (example: http://localhost:5000/api).",
     );
   }
 

@@ -3,7 +3,10 @@ const User = require("../models/auth.model");
 const { errorResponse, successResponse } = require("../utils/responseHandler");
 const bcrypt = require("bcrypt");
 const sendVerifyEmail = require("../utils/sendVerifyEmail");
-const { uploadToCloudinary, deleteFromCloudinary } = require("../utils/cloudinaryHelper");
+const {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} = require("../utils/cloudinaryHelper");
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
 const passwordRegex =
@@ -161,7 +164,12 @@ const verifyCode = async (req, res) => {
 
 const logOutUser = async (req, res) => {
   try {
-    res.clearCookie("token");
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
+    });
     return successResponse(res, 200, "Logout successfully");
   } catch (error) {
     console.log(error);

@@ -19,11 +19,6 @@ const {
 const router = express.Router();
 const upload = multer();
 
-// Public
-router.get("/", listProducts);
-router.get("/slug/:slug", getProductBySlug);
-router.get("/:id", getProductById);
-
 // Admin read (role-based)
 router.get("/admin", verifyToken, requireRole("admin"), listProductsAdmin);
 router.get(
@@ -38,6 +33,11 @@ router.get(
   requireRole("admin"),
   getProductByIdAdmin,
 );
+
+// Public
+router.get("/", listProducts);
+router.get("/slug/:slug", getProductBySlug);
+router.get("/:id", getProductById);
 
 // Admin (role-based)
 router.post(

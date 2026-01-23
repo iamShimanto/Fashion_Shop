@@ -5,8 +5,12 @@ import { LuHeart } from "react-icons/lu";
 import { BsCartCheck } from "react-icons/bs";
 
 const SingleProduct = ({ image, title, price, slug, href }) => {
+  const safeSlug = typeof slug === "string" ? slug.trim() : "";
   const finalHref =
-    href || (slug ? `/productDetails/${slug}` : "/productDetails");
+    href ||
+    (safeSlug
+      ? `/productDetails/${encodeURIComponent(safeSlug)}`
+      : "/productDetails");
 
   return (
     <div className="rounded-2xl overflow-hidden group w-full">
