@@ -19,6 +19,31 @@ function numberOrEmpty(value) {
   return Number.isFinite(n) ? n : "";
 }
 
+function normalizeExistingImagesMeta(product) {
+  if (!product) return [];
+  const meta = Array.isArray(product.imagesMeta) ? product.imagesMeta : null;
+  if (meta && meta.length) {
+    return meta
+      .map((img, idx) => ({
+        serial: Number(img?.serial) || idx + 1,
+        url: img?.url,
+        publicId: img?.publicId || "",
+      }))
+      .filter((x) => Boolean(x.url))
+      .sort((a, b) => a.serial - b.serial);
+  }
+
+  const urls = Array.isArray(product.images) ? product.images : [];
+  return urls
+    .map((url, idx) => ({ serial: idx + 1, url, publicId: "" }))
+    .filter((x) => Boolean(x.url));
+}
+
+function fileSignature(file) {
+  if (!file) return "";
+  return `${file.name}__${file.size}__${file.lastModified}`;
+}
+
 export default function ProductForm({ mode }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -44,7 +69,9 @@ export default function ProductForm({ mode }) {
   const [sizes, setSizes] = useState("");
   const [colorsJson, setColorsJson] = useState("[]");
 
-  const [images, setImages] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
+  const [newImages, setNewImages] = useState([]);
+  const [replaceBySerial, setReplaceBySerial] = useState({});
 
   const initialTitle = useMemo(
     () => (isEdit ? "Edit product" : "Create product"),
@@ -77,6 +104,10 @@ export default function ProductForm({ mode }) {
         setTags((p.tags || []).join(", "));
         setSizes((p.sizes || []).join(", "));
         setColorsJson(JSON.stringify(p.colors || [], null, 2));
+
+        setExistingImages(normalizeExistingImagesMeta(p));
+        setNewImages([]);
+        setReplaceBySerial({});
       } catch (e) {
         toast.error(e.message);
         navigate("/products", { replace: true });
@@ -118,7 +149,7 @@ export default function ProductForm({ mode }) {
 
     setBusy(true);
     try {
-      const fd = buildProductFormData(payload, images);
+      const fd = buildProductFormData(payload, { newImages, replaceBySerial });
       if (isEdit) {
         await productApi.updateProduct(id, fd);
         toast.success("Updated");
@@ -133,6 +164,9 @@ export default function ProductForm({ mode }) {
       setBusy(false);
     }
   };
+
+  const replacementCount =
+    Object.values(replaceBySerial).filter(Boolean).length;
 
   if (loading) {
     return (
@@ -287,18 +321,220 @@ export default function ProductForm({ mode }) {
           />
         </Card>
 
-        <Card title="Images" subtitle="Upload one or more images">
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => setImages(Array.from(e.target.files || []))}
-          />
-          {images.length ? (
-            <div className="mt-2 text-xs text-dark/60">
-              Selected: {images.map((f) => f.name).join(", ")}
+        <Card
+          title="Images"
+          subtitle={
+            isEdit
+              ? "Images keep a stable serial. Replace a specific serial without changing the others."
+              : "Upload one or more images (serial follows selection order)."
+          }
+        >
+          {isEdit ? (
+            <div className="space-y-3">
+              {existingImages.length ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {existingImages.map((img) => (
+                    <div
+                      key={img.serial}
+                      className="rounded-xl border border-dark/10 bg-white p-3 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="inline-flex items-center gap-2">
+                          <span className="inline-flex h-7 items-center rounded-full bg-dark/5 px-2 text-xs font-extrabold text-dark">
+                            Serial #{img.serial}
+                          </span>
+                          {replaceBySerial[img.serial] ? (
+                            <span className="text-xs font-semibold text-brand">
+                              Replacement queued
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="mt-2 overflow-hidden rounded-lg border border-dark/10 bg-dark/2">
+                        <img
+                          src={img.url}
+                          alt={`Serial ${img.serial}`}
+                          className="h-40 w-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dark/15 bg-white px-3 py-2 text-xs font-bold text-dark transition hover:bg-dark/5">
+                          Replace image
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = (e.target.files || [])[0];
+                              if (!file) return;
+                              setReplaceBySerial((prev) => ({
+                                ...prev,
+                                [img.serial]: file,
+                              }));
+                            }}
+                          />
+                        </label>
+
+                        {replaceBySerial[img.serial] ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() =>
+                              setReplaceBySerial((prev) => {
+                                const next = { ...prev };
+                                delete next[img.serial];
+                                return next;
+                              })
+                            }
+                          >
+                            Clear
+                          </Button>
+                        ) : (
+                          <div className="text-[11px] text-dark/50">—</div>
+                        )}
+                      </div>
+
+                      {replaceBySerial[img.serial] ? (
+                        <div className="mt-2 rounded-lg bg-brand/5 px-2 py-1 text-[11px] text-dark/70">
+                          {replaceBySerial[img.serial]?.name}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-dark/20 bg-dark/2 p-6 text-center text-sm text-dark/60">
+                  No images yet.
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dark/10 bg-dark/2 px-3 py-2">
+                <div className="text-xs text-dark/70">
+                  Replacements queued:{" "}
+                  <span className="font-bold">{replacementCount}</span>
+                </div>
+                {replacementCount ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setReplaceBySerial({})}
+                  >
+                    Clear replacements
+                  </Button>
+                ) : null}
+              </div>
             </div>
           ) : null}
+
+          <div className={isEdit ? "mt-4" : ""}>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <div className="text-sm font-extrabold text-dark">
+                  Add new images
+                </div>
+                <div className="text-xs text-dark/60">
+                  New uploads are appended after the last serial.
+                </div>
+              </div>
+              {newImages.length ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setNewImages([])}
+                >
+                  Clear selection
+                </Button>
+              ) : null}
+            </div>
+
+            <label className="mt-3 block">
+              <div className="rounded-xl border border-dashed border-dark/20 bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-bold text-dark">
+                      Choose images
+                    </div>
+                    <div className="mt-0.5 text-xs text-dark/55">
+                      PNG/JPG/WebP supported.
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center rounded-lg bg-brand px-3 py-2 text-xs font-extrabold text-white">
+                    Browse
+                  </span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const picked = Array.from(e.target.files || []);
+                    if (!picked.length) return;
+
+                    setNewImages((prev) => {
+                      const seen = new Set(prev.map(fileSignature));
+                      const next = prev.slice();
+
+                      for (const file of picked) {
+                        const sig = fileSignature(file);
+                        if (sig && seen.has(sig)) continue;
+                        if (sig) seen.add(sig);
+                        next.push(file);
+                      }
+
+                      return next;
+                    });
+
+                    // allow selecting the same file again
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </label>
+
+            {newImages.length ? (
+              <div className="mt-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {newImages.map((file, idx) => (
+                    <div
+                      key={`${file.name}-${idx}`}
+                      className="rounded-xl border border-dark/10 bg-white p-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-extrabold text-dark/70">
+                          +{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          className="text-[11px] font-bold text-dark/50 hover:text-dark"
+                          onClick={() =>
+                            setNewImages((prev) =>
+                              prev.filter((_, i) => i !== idx),
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div
+                        className="mt-1 truncate text-[11px] text-dark/55"
+                        title={file.name}
+                      >
+                        {file.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 text-xs text-dark/55">
+                No new images selected.
+              </div>
+            )}
+          </div>
         </Card>
 
         <div className="flex items-center gap-2">

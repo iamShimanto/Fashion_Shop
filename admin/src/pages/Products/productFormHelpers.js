@@ -14,7 +14,10 @@ export function safeJsonParse(value, fallback) {
   }
 }
 
-export function buildProductFormData(values, files = []) {
+export function buildProductFormData(
+  values,
+  { newImages = [], replaceBySerial = {} } = {},
+) {
   const fd = new FormData();
 
   Object.entries(values).forEach(([k, v]) => {
@@ -38,8 +41,15 @@ export function buildProductFormData(values, files = []) {
     fd.append(k, String(v));
   });
 
-  for (const file of files) {
+  for (const file of newImages) {
     fd.append("images", file);
+  }
+
+  for (const [serial, file] of Object.entries(replaceBySerial || {})) {
+    if (!file) continue;
+    const s = Number(serial);
+    if (!Number.isFinite(s) || s <= 0) continue;
+    fd.append(`replace_serial_${s}`, file);
   }
 
   return fd;

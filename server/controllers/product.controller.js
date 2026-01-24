@@ -6,6 +6,7 @@ const slugify = require("../utils/slugify");
 const {
   uploadToCloudinary,
   deleteFromCloudinary,
+  safeDeleteFromCloudinary,
 } = require("../utils/cloudinaryHelper");
 
 function parseJsonMaybe(value, fallback) {
@@ -28,6 +29,54 @@ function truthyQuery(value) {
   if (value === undefined || value === null) return false;
   const v = String(value).trim().toLowerCase();
   return v === "true" || v === "1" || v === "yes" || v === "on";
+}
+
+function hasValidUniqueSerials(images) {
+  if (!Array.isArray(images) || images.length === 0) return true;
+  const serials = images
+    .map((img) => Number(img?.serial))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  if (serials.length !== images.length) return false;
+  return new Set(serials).size === serials.length;
+}
+
+function initializeSerialsInOrder(images) {
+  if (!Array.isArray(images)) return;
+  for (let i = 0; i < images.length; i += 1) {
+    images[i].serial = i + 1;
+  }
+}
+
+function maxSerial(images) {
+  if (!Array.isArray(images) || images.length === 0) return 0;
+  let max = 0;
+  for (const img of images) {
+    const s = Number(img?.serial);
+    if (Number.isFinite(s) && s > max) max = s;
+  }
+  return max;
+}
+
+function normalizedImagesForClient(product) {
+  const raw = Array.isArray(product?.images) ? product.images : [];
+  const mapped = raw.map((img, idx) => {
+    const serial =
+      Number.isFinite(Number(img?.serial)) && Number(img.serial) > 0
+        ? Number(img.serial)
+        : idx + 1;
+    return {
+      serial,
+      url: img?.url,
+      publicId: img?.publicId || "",
+    };
+  });
+
+  mapped.sort((a, b) => a.serial - b.serial);
+
+  return {
+    urls: mapped.map((x) => x.url).filter(Boolean),
+    meta: mapped,
+  };
 }
 
 async function generateUniqueSlug(base, productIdToExclude) {
@@ -54,10 +103,15 @@ function toClientProduct(productDoc) {
   const p = productDoc?.toObject ? productDoc.toObject() : productDoc;
   if (!p) return p;
 
+  const images = normalizedImagesForClient(p);
+
   return {
     ...p,
     oldPrice: p.compareAtPrice,
-    images: Array.isArray(p.images) ? p.images.map((img) => img.url) : [],
+    // Keep legacy/public shape as array of URLs
+    images: images.urls,
+    // Admin and advanced clients can use metadata (serial/publicId)
+    imagesMeta: images.meta,
   };
 }
 
@@ -485,9 +539,15 @@ const createProduct = async (req, res) => {
 
     const images = [];
     const files = req.files || [];
+    let serial = 1;
     for (const file of files) {
       const uploaded = await uploadToCloudinary(file, "products");
-      images.push({ url: uploaded.secure_url, publicId: uploaded.public_id });
+      images.push({
+        serial,
+        url: uploaded.secure_url,
+        publicId: uploaded.public_id,
+      });
+      serial += 1;
     }
 
     const normalizedGender = (gender || "").toString().trim().toLowerCase();
@@ -553,6 +613,10 @@ const updateProduct = async (req, res) => {
 
     const product = await Product.findById(id);
     if (!product) return errorResponse(res, 404, "Product not found");
+
+    if (!hasValidUniqueSerials(product.images)) {
+      initializeSerialsInOrder(product.images);
+    }
 
     const {
       title,
@@ -711,19 +775,63 @@ const updateProduct = async (req, res) => {
       product.images.length > 0
     ) {
       for (const img of product.images) {
-        if (img.publicId) await deleteFromCloudinary(img.publicId);
+        await safeDeleteFromCloudinary({
+          publicId: img.publicId,
+          url: img.url,
+        });
       }
       product.images = [];
     }
 
-    // Add new images
     const files = req.files || [];
+
+    // Replace existing image by serial: file field name must be `replace_serial_<n>`
     for (const file of files) {
+      const match = /^replace_serial_(\d+)$/.exec(file?.fieldname || "");
+      if (!match) continue;
+
+      const serialToReplace = Number(match[1]);
+      if (!Number.isFinite(serialToReplace) || serialToReplace <= 0) {
+        return errorResponse(res, 400, "Invalid image serial");
+      }
+
+      const target = (product.images || []).find(
+        (img) => Number(img?.serial) === serialToReplace,
+      );
+      if (!target) {
+        return errorResponse(
+          res,
+          400,
+          `Image serial ${serialToReplace} not found`,
+        );
+      }
+
+      await safeDeleteFromCloudinary({
+        publicId: target.publicId,
+        url: target.url,
+      });
       const uploaded = await uploadToCloudinary(file, "products");
+      target.url = uploaded.secure_url;
+      target.publicId = uploaded.public_id;
+    }
+
+    // Add new images (field name `images`): appended with increasing serial
+    let nextSerial = maxSerial(product.images);
+    for (const file of files) {
+      if ((file?.fieldname || "") !== "images") continue;
+      const uploaded = await uploadToCloudinary(file, "products");
+      nextSerial += 1;
       product.images.push({
+        serial: nextSerial,
         url: uploaded.secure_url,
         publicId: uploaded.public_id,
       });
+    }
+
+    if (Array.isArray(product.images) && product.images.length > 1) {
+      product.images = product.images
+        .slice()
+        .sort((a, b) => Number(a.serial || 0) - Number(b.serial || 0));
     }
 
     await product.save();
@@ -753,7 +861,7 @@ const deleteProduct = async (req, res) => {
     if (!product) return errorResponse(res, 404, "Product not found");
 
     for (const img of product.images || []) {
-      if (img.publicId) await deleteFromCloudinary(img.publicId);
+      await safeDeleteFromCloudinary({ publicId: img.publicId, url: img.url });
     }
 
     await Product.deleteOne({ _id: id });

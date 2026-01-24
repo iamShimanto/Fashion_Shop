@@ -44,14 +44,14 @@ router.post(
   "/",
   verifyToken,
   requireRole("admin"),
-  upload.array("images", 10),
+  upload.any(),
   createProduct,
 );
 router.put(
   "/:id",
   verifyToken,
   requireRole("admin"),
-  upload.array("images", 10),
+  upload.any(),
   updateProduct,
 );
 router.delete("/:id", verifyToken, requireRole("admin"), deleteProduct);

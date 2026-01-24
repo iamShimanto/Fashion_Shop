@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const imageSchema = new mongoose.Schema(
   {
+    serial: { type: Number, default: 0, min: 0 },
     url: { type: String, required: true, trim: true },
     publicId: { type: String, default: "", trim: true },
   },

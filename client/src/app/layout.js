@@ -30,11 +30,11 @@ export const metadata = {
   description:
     "Shop the latest fashion for men and women. Discover new arrivals, best sellers, and on-sale items.",
   alternates: {
-    canonical: "/",
+    canonical: absoluteUrl("/"),
   },
   openGraph: {
     type: "website",
-    url: "/",
+    url: absoluteUrl("/"),
     title: "Shimanto — Fashion Shop",
     description:
       "Shop the latest fashion for men and women. Discover new arrivals, best sellers, and on-sale items.",
